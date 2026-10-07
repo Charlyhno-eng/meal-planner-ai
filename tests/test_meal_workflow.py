@@ -388,3 +388,79 @@ def test_recipe_provider_failure_after_interpretation_is_visible(qt_app, monkeyp
 )
 def test_this_week_is_a_calendar_week(today, start, end):
     assert resolve_period("this_week", {"today": today}) == Period(start=start, end=end)
+
+
+def test_manual_servings_scale_recipe_and_persist(qt_app, tmp_path, fake_recipes):
+    path = tmp_path / "config.toml"
+    state = DemoState(config_path=path)
+    state.apply_execution(result_for(state, fake_recipes))
+    state.setGuests(0, 1)
+    assert state.addIngredientToGroceries(0, 0)
+    purchases = state.groceries
+    assert state.setMealServings(0, 6)
+    assert state.settings["people"] == 2
+    assert state.meals[0]["baseServings"] == 6
+    assert state.meals[0]["servings"] == 7
+    assert state.meals[0]["ingredients"][0]["quantity"] == "350 g"
+    assert state.meals[0]["ingredients"][0]["missingAmount"] == 200
+    assert state.groceries == purchases
+    restored = DemoState(config_path=path)
+    assert restored.meals == state.meals
+    assert restored.groceries == purchases
+    assert state.setMealServings(0, 2)
+    assert state.meals[0]["ingredients"][0]["quantity"] == "150 g"
+    before = state.meals
+    for index, servings in [(-1, 6), (1, 6), (0, 0), (0, 33)]:
+        assert not state.setMealServings(index, servings)
+        assert state.meals == before
+
+
+def test_servings_save_failure_preserves_meal(qt_app, monkeypatch, fake_recipes):
+    state = DemoState()
+    state.apply_execution(result_for(state, fake_recipes))
+    before = state.meals
+
+    def fail(data):
+        raise OSError("cannot save")
+
+    monkeypatch.setattr(state, "_save_coordinator", fail)
+    assert not state.setMealServings(0, 6)
+    assert state.meals == before
+
+
+def test_recipe_servings_control_updates_quantities(qt_app, fake_recipes):
+    from pathlib import Path
+
+    from PySide6.QtCore import QCoreApplication, QEvent, QMetaObject, QObject
+    from PySide6.QtQml import QQmlApplicationEngine
+
+    from meal_planner_ai.ui import app
+
+    state = DemoState()
+    state.apply_execution(result_for(state, fake_recipes))
+    engine = QQmlApplicationEngine()
+    warnings = []
+    engine.warnings.connect(lambda errors: warnings.extend(str(e) for e in errors))
+    engine.setInitialProperties({"demo": state})
+    engine.load(Path(app.__file__).parent / "qml" / "Main.qml")
+    assert engine.rootObjects(), warnings
+    window = engine.rootObjects()[0]
+    try:
+        assert window.property("pageTitles").toVariant()[0] == "Mes repas"
+        dialog = window.findChild(QObject, "recipeDialog")
+        dialog.setProperty("mealId", 0)
+        QMetaObject.invokeMethod(dialog, "open")
+        QTest.qWait(20)
+        picker = dialog.findChild(QObject, "mealServingsPicker")
+        assert picker.property("value") == 2
+        picker.setProperty("value", 6)
+        assert QMetaObject.invokeMethod(picker, "valueModified")
+        qt_app.processEvents()
+        assert state.meals[0]["ingredients"][0]["quantity"] == "300 g"
+        assert state.meals[0]["servings"] == 6
+        assert state.groceries == []
+        assert not warnings, "\n".join(warnings)
+    finally:
+        window.close()
+        engine.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)

@@ -32,14 +32,18 @@ over an icon to see its page name.
   pantry updates. A spinner, elapsed time and stage history show GLM interpretation,
   recipe preparation, preference checks, grocery calculation and saving. The final
   confirmation lists the changes. Ambiguous requests ask for clarification.
-- **Planning:** choose a period (start date and 1–14 days), a meal count
+- **Meals:** choose a period (start date and 1–14 days), a meal count
   (1–28, independent of the number of days), and household size. Meals form a
   list for the whole period, without assigned days or lunch/dinner slots. Cook
   them in any order. Guests are attached to individual meals, and groceries
   cover the full list. Named dishes sent to the assistant get their own recipes
-  and appear directly in **Planning**, with the requested period and portions.
+  and appear directly in **Meals**, with the requested period and portions.
   Saving settings does not generate new recipes; use the assistant to request a
-  dish. Generated meals can be removed, and their recipes can be opened.
+  dish. Generated meals can be removed, and their recipes can be opened. In a recipe,
+  adjust **Servings (excluding guests)** from 1 to 32 to prepare several meals at
+  once (for example, six servings for three meals for two people). Changes are
+  saved locally and scale ingredient quantities; guests remain additional servings.
+  Existing grocery purchases are unchanged, so add any new shortfall manually.
   Recipe ingredients show compact pantry and grocery coverage checks for the full
   plan, including guests. Missing ingredients are not added automatically. Click the small +
   button to save an uncovered quantity to the grocery list.
@@ -190,7 +194,7 @@ claim to expose GLM's internal reasoning or perform an Internet recipe search.
 Examples:
 
 - **“J’ai envie de faire un tiramisu cette semaine.”** Generates a tiramisu
-  recipe for the configured household size, adds it to Planning for the current
+  recipe for the configured household size, adds it to Meals for the current
   Monday–Sunday week. Open the recipe to review missing ingredients and manually
   add the ones you want to buy.
 - **“I want to make tiramisu for six people.”** Adds the meal and a recipe for six

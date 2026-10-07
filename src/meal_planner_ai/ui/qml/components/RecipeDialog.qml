@@ -47,6 +47,25 @@ Modal {
                     text: dialog.meal && dialog.meal.vegetarian ? I18n.tr("Végétarien") : ""
                 }
             }
+            RowLayout {
+                visible: !!dialog.meal && !!dialog.meal.requestId
+                Layout.fillWidth: true
+                Caption {
+                    text: I18n.tr("Portions (hors invités)")
+                    Layout.fillWidth: true
+                }
+                NumberPicker {
+                    objectName: "mealServingsPicker"
+                    from: 1
+                    to: 32
+                    value: dialog.meal ? (dialog.meal.baseServings || 1) : 1
+                    Accessible.name: I18n.tr("Portions (hors invités)")
+                    onValueModified: {
+                        if (!dialog.store.setMealServings(dialog.mealId, value))
+                            value = dialog.meal.baseServings;
+                    }
+                }
+            }
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1

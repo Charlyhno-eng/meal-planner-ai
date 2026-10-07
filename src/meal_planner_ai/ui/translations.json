@@ -17,7 +17,6 @@
   "Mes courses": "My groceries",
   "Mon foyer": "My household",
   "Planning": "Meal plan",
-  "Réserve": "Pantry",
   "Courses": "Groceries",
   "Foyer": "Household",
   "VOTRE QUOTIDIEN": "YOUR EVERYDAY",
@@ -361,7 +360,6 @@
   "Courses à acheter : ": "Groceries to buy: ",
   "Enregistrement en cours — 5 minutes maximum.": "Recording — 5 minutes maximum.",
   "Des envies aux recettes": "From ideas to recipes",
-  "Ce que vous avez déjà": "What you already have",
   "Pour ne rien oublier": "Remember every essential",
   "Exemple : ": "Example: ",
   "Envoyer": "Send",
@@ -372,5 +370,7 @@
   "Reprendre les animations": "Resume animations",
   "À venir": "Planned",
   "Animation illustrative des échanges, sans suivi d’activité en direct.": "Illustrative exchange animation, without live activity tracking.",
-  "Échanges illustrés": "Illustrated exchanges"
+  "Échanges illustrés": "Illustrated exchanges",
+  "Portions (hors invités)": "Servings (excluding guests)",
+  "Paramètres des repas": "Meal settings"
 }

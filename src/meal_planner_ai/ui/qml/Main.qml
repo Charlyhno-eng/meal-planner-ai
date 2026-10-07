@@ -17,7 +17,7 @@ ApplicationWindow {
     }
     onCurrentPageChanged: if (currentPage !== 5)
         demo.assistant.cancelDictation()
-    property var pageTitles: [I18n.tr("Mon planning"), I18n.tr("Ma réserve"), I18n.tr("Mes courses"), I18n.tr("Mon foyer"), I18n.tr("Paramètres"), I18n.tr("Planifier avec l’IA"), I18n.tr("Interactions IA")]
+    property var pageTitles: [I18n.tr("Mes repas"), I18n.tr("Ma réserve"), I18n.tr("Mes courses"), I18n.tr("Mon foyer"), I18n.tr("Paramètres"), I18n.tr("Planifier avec l’IA"), I18n.tr("Interactions IA")]
     Binding {
         target: I18n
         property: "translator"
@@ -135,7 +135,7 @@ ApplicationWindow {
             Repeater {
                 model: [
                     { title: I18n.tr("Assistant IA"), icon: "assistant", page: 5, count: 0 },
-                    { title: I18n.tr("Planning"), icon: "planning", page: 0, count: window.demo.meals.length },
+                    { title: I18n.tr("Repas"), icon: "planning", page: 0, count: window.demo.meals.length },
                     { title: I18n.tr("Réserve"), icon: "pantry", page: 1, count: window.demo.pantry.length },
                     { title: I18n.tr("Courses"), icon: "groceries", page: 2,
                       count: window.demo.groceries.filter(item => !item.available && !item.checked).length },

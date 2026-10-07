@@ -445,6 +445,7 @@ class DemoState(QObject):
             art=index,
             label=f"{self.translate('Repas ')}{len(self._plan) + index + 1}",
             servings=servings,
+            baseServings=item.servings,
             guests=item.guests,
             periodLabel=(
                 f"{item.period.start.isoformat()} — {item.period.end.isoformat()}"
@@ -683,6 +684,30 @@ class DemoState(QObject):
         self._checked.clear()
         self.changed.emit()
         self._notify("Aliment retiré")
+
+    @Slot(int, int, result=bool)
+    def setMealServings(self, index, servings):
+        if not (len(self._plan) <= index < len(self.meals) and 1 <= servings <= 32):
+            return False
+        item = self._generated_meals()[index - len(self._plan)]
+        data = self._coordinator_data.model_copy(deep=True)
+        meal = next(meal for meal in data.meals if meal.id == item.id)
+        ratio = servings / meal.recipe.servings
+        meal.recipe.ingredients = [
+            ingredient.model_copy(update={"amount": ingredient.amount * ratio})
+            for ingredient in meal.recipe.ingredients
+        ]
+        meal.servings = servings
+        meal.recipe.servings = servings
+        try:
+            data = CoordinatorData.model_validate(data.model_dump())
+            self._save_coordinator(data)
+        except (ValueError, OSError):
+            self._notify("Impossible d’enregistrer les demandes. Réessayez.")
+            return False
+        self._coordinator_data = data
+        self.changed.emit()
+        return True
 
     @Slot(int, int)
     def setGuests(self, index, count):

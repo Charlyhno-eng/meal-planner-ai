@@ -136,7 +136,7 @@ def test_settings_switches_every_screen_and_dialog_without_qml_warnings(
         qt_app.processEvents()
         assert demo.language == "en"
         assert window.property("pageTitles").toVariant() == [
-            "My meal plan",
+            "My meals",
             "My pantry",
             "My groceries",
             "My household",

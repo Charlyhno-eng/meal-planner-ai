@@ -46,7 +46,7 @@ ScrollView {
                     }
                 }
                 ActionButton {
-                    text: I18n.tr("Ajuster le planning")
+                    text: I18n.tr("Paramètres des repas")
                     primary: true
                     onClicked: page.configureRequested()
                 }
