@@ -46,7 +46,10 @@ editing; requests are only sent when you click **Send request**.
   the GLM API key, and set up dictation.
 - **AI interactions:** located immediately above Settings, inspect the planned
   five-agent architecture. The coordinator, meal planning, preferences and grocery
-  list agents are connected. The separate grocery verification agent remains
+  list agents are connected. The map also shows the local pantry service supplying
+  stock to meal planning and groceries, recipe requirements sent to groceries,
+  and ingredient coverage returned to meals (in stock or to purchase).
+  The separate grocery verification agent remains
   planned. The map describes their roles; live stage history is in the assistant.
 
 Use `Ctrl+1` for the assistant, `Ctrl+2` through `Ctrl+6` for Planning, Pantry,

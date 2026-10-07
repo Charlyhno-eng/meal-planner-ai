@@ -40,11 +40,15 @@ def test_agent_map_selection_keyboard_translation_and_geometry(qt_app, tmp_path,
             ("coordinator", "preferences"),
             ("coordinator", "groceries"),
             ("groceries", "verification"),
+            ("pantry", "planning"),
+            ("pantry", "groceries"),
+            ("planning", "groceries"),
+            ("groceries", "planning"),
         ]
     ]
     title = window.findChild(QObject, "selectedAgentTitle")
     role = window.findChild(QObject, "selectedAgentRole")
-    nodes = [visual_child(window.contentItem(), f"agentNode{i}") for i in range(5)]
+    nodes = [visual_child(window.contentItem(), f"agentNode{i}") for i in range(6)]
 
     try:
         assert user is not None
@@ -54,6 +58,10 @@ def test_agent_map_selection_keyboard_translation_and_geometry(qt_app, tmp_path,
             "coordinator->preferences",
             "coordinator->groceries",
             "groceries->verification",
+            "pantry->planning",
+            "pantry->groceries",
+            "planning->groceries",
+            "groceries->planning",
         ]
         assert title.property("text") == "Orchestrateur"
 
@@ -100,21 +108,22 @@ def test_agent_map_selection_keyboard_translation_and_geometry(qt_app, tmp_path,
             assert title.property("text") == node.property("title")
             assert role.property("text")
             assert [n.property("selected") for n in nodes] == [
-                i == index for i in range(5)
+                i == index for i in range(6)
             ]
 
         # Switching language updates the selected node and inspector in place.
         assert demo.setLanguage("en")
         qt_app.processEvents()
-        assert page.property("selectedAgent") == 4
-        assert title.property("text") == "Grocery verification"
-        assert role.property("text").startswith("Checks the grocery list")
+        assert page.property("selectedAgent") == 5
+        assert title.property("text") == "Pantry"
+        assert nodes[5].property("kind") == "pantry"
+        assert role.property("text").startswith("Local service: maintains stock")
         status = window.findChild(QObject, "agentInteractionsStatus")
         assert status.property("text").startswith(
             "Orchestrator, meal planning, preferences and groceries are active."
         )
 
-        nodes = [visual_child(window.contentItem(), f"agentNode{i}") for i in range(5)]
+        nodes = [visual_child(window.contentItem(), f"agentNode{i}") for i in range(6)]
         nodes[0].forceActiveFocus()
         QTest.keyClick(window, Qt.Key_Tab)
         assert nodes[1].hasActiveFocus()

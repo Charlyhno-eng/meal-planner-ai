@@ -15,7 +15,11 @@ ScrollView {
         {from: "coordinator", to: "planning", fromAgent: 0, toAgent: 1, label: I18n.tr("Repas")},
         {from: "coordinator", to: "preferences", fromAgent: 0, toAgent: 2, label: I18n.tr("Préférences")},
         {from: "coordinator", to: "groceries", fromAgent: 0, toAgent: 3, label: I18n.tr("Repas retenus")},
-        {from: "groceries", to: "verification", fromAgent: 3, toAgent: 4, label: I18n.tr("Liste")}
+        {from: "groceries", to: "verification", fromAgent: 3, toAgent: 4, label: I18n.tr("Liste")},
+        {from: "pantry", to: "planning", fromAgent: 5, toAgent: 1, label: I18n.tr("Stock")},
+        {from: "pantry", to: "groceries", fromAgent: 5, toAgent: 3, label: I18n.tr("Quantités en réserve")},
+        {from: "planning", to: "groceries", fromAgent: 1, toAgent: 3, label: I18n.tr("Ingrédients requis")},
+        {from: "groceries", to: "planning", fromAgent: 3, toAgent: 1, label: I18n.tr("Réserve / achats")}
     ]
     readonly property var agents: [
         {
@@ -27,8 +31,8 @@ ScrollView {
         {
             title: I18n.tr("Planification des repas"), kind: "planning", tint: "#a5c8e8",
             role: I18n.tr("Compose les repas en tenant compte des ingrédients, de la période et des convives."),
-            input: I18n.tr("Les consignes de l’orchestrateur, les ingrédients et le nombre de convives."),
-            output: I18n.tr("Un planning et les recettes proposées pour chaque repas.")
+            input: I18n.tr("Les consignes de l’orchestrateur, le stock de la réserve et le nombre de convives."),
+            output: I18n.tr("Des recettes et leurs besoins transmis aux courses ; une couverture par ingrédient affichée dans les repas.")
         },
         {
             title: I18n.tr("Préférences alimentaires"), kind: "preferences", tint: "#d2b8e8",
@@ -40,13 +44,19 @@ ScrollView {
             title: I18n.tr("Liste de courses"), kind: "groceries", tint: "#e5c397",
             role: I18n.tr("Calcule les besoins et distingue les ingrédients en réserve de ceux à acheter."),
             input: I18n.tr("Les repas retenus, les quantités en réserve et les portions."),
-            output: I18n.tr("Une liste de courses avec les quantités manquantes.")
+            output: I18n.tr("Les quantités à acheter et la couverture des ingrédients renvoyée aux repas.")
         },
         {
             title: I18n.tr("Vérification des courses"), kind: "verification", tint: "#94d1c6",
             role: I18n.tr("Vérifie la liste de courses produite et signale les manques ou incohérences."),
             input: I18n.tr("La liste de courses et les quantités retenues par l’agent des courses."),
             output: I18n.tr("Les éventuels manques et incohérences détectés.")
+        },
+        {
+            title: I18n.tr("Réserve"), kind: "pantry", tint: "#d5c49f",
+            role: I18n.tr("Service local : conserve le stock et fournit les quantités disponibles aux repas et aux courses."),
+            input: I18n.tr("Les aliments et quantités saisis dans la réserve."),
+            output: I18n.tr("Le stock disponible pour préparer les recettes et calculer les achats manquants.")
         }
     ]
     readonly property var selected: agents[selectedAgent]
@@ -90,8 +100,7 @@ ScrollView {
                 anchors.right: parent.right
                 height: page.availableHeight < 700 ? 440 : 520
                 readonly property real nodeWidth: Math.min(176, Math.max(124, (width - 90) / 4))
-                // Four columns fit the user, orchestrator, three delegated
-                // tasks, and the grocery-only verification step.
+                // The pantry is a local service alongside the five agents.
                 function center(id) {
                     const left = nodeWidth / 2 + 8;
                     const step = (width - 2 * left) / 3;
@@ -100,12 +109,25 @@ ScrollView {
                     if (id === "coordinator") return {x: left + step, y: middle};
                     if (id === "planning") return {x: left + 2 * step, y: height * 0.18};
                     if (id === "preferences") return {x: left + 2 * step, y: middle};
+                    if (id === "pantry") return {x: left + 3 * step, y: height * 0.18};
                     if (id === "groceries") return {x: left + 2 * step, y: height * 0.82};
                     return {x: left + 3 * step, y: height * 0.82};
                 }
                 function edge(link) {
                     const from = center(link.from);
                     const to = center(link.to);
+                    if ((link.from === "planning" && link.to === "groceries")
+                            || (link.from === "groceries" && link.to === "planning")) {
+                        // Route recipe/coverage exchanges around the preferences card.
+                        const outward = link.from === "planning";
+                        const lane = (center("planning").x + center("pantry").x) / 2
+                                     + (outward ? -8 : 8);
+                        const start = {x: from.x + nodeWidth / 2, y: from.y + (outward ? 30 : -30)};
+                        const end = {x: to.x + nodeWidth / 2, y: to.y + (outward ? -30 : 30)};
+                        return {start: start, end: end,
+                            bends: [{x: lane, y: start.y}, {x: lane, y: end.y}],
+                            label: {x: lane, y: height * (outward ? 0.35 : 0.65)}};
+                    }
                     const dx = to.x - from.x;
                     const dy = to.y - from.y;
                     // Intersect the node rectangles so arrowheads end at the
@@ -117,7 +139,7 @@ ScrollView {
                     const middle = {x: (from.x + to.x) / 2, y: (from.y + to.y) / 2};
                     const label = dy === 0
                         ? {x: middle.x, y: middle.y - 66}
-                        : {x: to.x, y: middle.y};
+                        : {x: link.from === "pantry" ? from.x : to.x, y: middle.y};
                     return {
                         start: {x: from.x + dx * scale, y: from.y + dy * scale},
                         end: {x: to.x - dx * scale, y: to.y - dy * scale},
@@ -141,12 +163,15 @@ ScrollView {
                         ctx.reset();
                         for (const relation of page.workflowLinks) {
                             const link = graph.edge(relation);
-                            const angle = Math.atan2(link.end.y - link.start.y, link.end.x - link.start.x);
+                            const bends = link.bends || [];
+                            const previous = bends.length ? bends[bends.length - 1] : link.start;
+                            const angle = Math.atan2(link.end.y - previous.y, link.end.x - previous.x);
                             ctx.strokeStyle = graph.edgeColor(relation);
                             ctx.fillStyle = graph.edgeColor(relation);
                             ctx.lineWidth = 2;
                             ctx.beginPath();
                             ctx.moveTo(link.start.x, link.start.y);
+                            for (const bend of bends) ctx.lineTo(bend.x, bend.y);
                             ctx.lineTo(link.end.x, link.end.y);
                             ctx.stroke();
                             ctx.beginPath();
@@ -234,7 +259,7 @@ ScrollView {
                         required property var modelData
                         required property int index
                         objectName: "agentNode" + index
-                        readonly property var nodeIds: ["coordinator", "planning", "preferences", "groceries", "verification"]
+                        readonly property var nodeIds: ["coordinator", "planning", "preferences", "groceries", "verification", "pantry"]
                         nodeWidth: graph.nodeWidth
                         x: graph.center(nodeIds[index]).x - width / 2
                         y: graph.center(nodeIds[index]).y - height / 2
@@ -275,7 +300,7 @@ ScrollView {
                         font.pixelSize: 18
                         Layout.fillWidth: true
                     }
-                    Caption { text: "0" + (page.selectedAgent + 1) + " / 05" }
+                    Caption { text: page.selected.kind === "pantry" ? I18n.tr("Service local") : "0" + (page.selectedAgent + 1) + " / 05" }
                 }
                 Caption {
                     objectName: "selectedAgentRole"

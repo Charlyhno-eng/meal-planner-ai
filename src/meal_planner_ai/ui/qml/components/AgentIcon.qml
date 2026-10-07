@@ -45,6 +45,10 @@ Canvas {
             ctx.lineTo(6, 24); ctx.quadraticCurveTo(6, 19, 11, 18);
             ctx.quadraticCurveTo(16, 16, 21, 18); ctx.quadraticCurveTo(26, 19, 26, 24);
             ctx.lineTo(26, 28); ctx.stroke();
+        } else if (kind === "pantry") {
+            ctx.strokeRect(5, 4, 22, 24);
+            line(5, 16, 27, 16); line(16, 4, 16, 28);
+            line(12, 9, 12, 12); line(20, 20, 20, 23);
         } else if (kind === "groceries") {
             ctx.beginPath(); ctx.moveTo(4, 13); ctx.lineTo(8, 27);
             ctx.lineTo(24, 27); ctx.lineTo(28, 13); ctx.closePath(); ctx.stroke();

@@ -15,7 +15,8 @@ Button {
     padding: 12
     hoverEnabled: true
     Accessible.name: title
-    Accessible.description: I18n.tr("Afficher le rôle et les échanges prévus de cet agent")
+    Accessible.description: kind === "pantry" ? I18n.tr("Service local")
+                                           : I18n.tr("Afficher le rôle et les échanges prévus de cet agent")
     Accessible.role: Accessible.Button
     Accessible.onPressAction: clicked()
     background: Rectangle {
@@ -44,6 +45,7 @@ Button {
             }
             Item { Layout.fillWidth: true }
             Text {
+                visible: node.kind !== "pantry"
                 text: "0" + node.step
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
