@@ -43,3 +43,45 @@ def sample_session(monkeypatch):
         self._make_plan()
 
     monkeypatch.setattr(DemoState, "__init__", initialize)
+
+
+@pytest.fixture
+def fake_recipes(monkeypatch):
+    """Generate deterministic test recipes, without making a provider request."""
+    import json
+
+    def respond(system, payload, api_key):
+        return json.dumps(
+            {
+                "recipes": [
+                    {
+                        "title": meal["title"],
+                        "servings": meal["servings"],
+                        "subtitle": "Recette de test",
+                        "minutes": 30,
+                        "vegetarian": True,
+                        "ingredients": [
+                            {
+                                "name": "Mascarpone",
+                                "amount": 50 * meal["servings"],
+                                "unit": "g",
+                                "category": "Produits frais",
+                            },
+                            {
+                                "name": "Sucre",
+                                "amount": 10 * meal["servings"],
+                                "unit": "g",
+                                "category": "Épicerie",
+                            },
+                        ],
+                        "steps": ["Mélanger les ingrédients et réserver au frais."],
+                    }
+                    for meal in payload["meals"]
+                ]
+            }
+        )
+
+    monkeypatch.setattr(
+        "meal_planner_ai.agents.meal_planning.agent.complete_json", respond
+    )
+    return respond

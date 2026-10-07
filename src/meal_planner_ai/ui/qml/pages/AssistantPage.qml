@@ -8,7 +8,6 @@ ScrollView {
     objectName: "assistantPage"
     required property var store
     property var assistant: store.assistant
-    property var proposal: assistant.proposal
     signal planningRequested
     signal configureRequested
     clip: true
@@ -29,7 +28,7 @@ ScrollView {
             wrapMode: Text.WordWrap
         }
         Caption {
-            text: I18n.tr("Les repas souhaités sont conservés en attente de l’agent de planification.")
+            text: I18n.tr("Une demande valide ajoute directement vos repas, leurs recettes et les courses nécessaires.")
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
         }
@@ -79,10 +78,60 @@ ScrollView {
             }
         }
         Caption {
-            text: page.assistant.recording ? I18n.tr("Enregistrement en cours — 20 secondes maximum.") : page.assistant.busy ? I18n.tr("Traitement en cours…") : I18n.tr("Dictée locale avec Parakeet. Le texte et le contexte sont envoyés à GLM pour interprétation.")
+            text: page.assistant.recording ? I18n.tr("Enregistrement en cours — 20 secondes maximum.") : page.assistant.busy ? page.assistant.status : I18n.tr("Dictée locale avec Parakeet. Le texte et le contexte sont envoyés à GLM pour interprétation.")
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
             Accessible.role: Accessible.StaticText
+        }
+        Panel {
+            visible: page.assistant.steps.length > 0 || page.assistant.busy
+            Layout.fillWidth: true
+            implicitHeight: progressContent.implicitHeight + 32
+            ColumnLayout {
+                id: progressContent
+                anchors.fill: parent
+                anchors.margins: 16
+                spacing: 10
+                RowLayout {
+                    Layout.fillWidth: true
+                    BusyIndicator {
+                        running: page.assistant.busy
+                        visible: running
+                        Layout.preferredWidth: 28
+                        Layout.preferredHeight: 28
+                    }
+                    Caption {
+                        objectName: "assistantStatus"
+                        text: page.assistant.status
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                    }
+                    Caption {
+                        visible: page.assistant.busy
+                        text: elapsed.seconds + I18n.tr(" s écoulées")
+                    }
+                }
+                Repeater {
+                    model: page.assistant.steps
+                    delegate: Caption {
+                        required property string modelData
+                        required property int index
+                        text: (index + 1) + ". " + modelData
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        font.pixelSize: 12
+                    }
+                }
+            }
+        }
+        Timer {
+            id: elapsed
+            property int seconds: 0
+            interval: 1000
+            repeat: true
+            running: page.assistant.busy
+            onRunningChanged: if (running) seconds = 0
+            onTriggered: seconds += 1
         }
         Caption {
             objectName: "assistantError"
@@ -107,41 +156,14 @@ ScrollView {
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
         }
-        ColumnLayout {
-            visible: Object.keys(page.proposal).length > 0
-            Layout.fillWidth: true
-            spacing: 12
-            Heading {
-                text: I18n.tr("Proposition à vérifier")
-                font.pixelSize: 20
-            }
-            Repeater {
-                model: page.proposal.titles || []
-                delegate: Caption {
-                    required property string modelData
-                    required property int index
-                    text: (index + 1) + ". " + modelData
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                }
-            }
-            Caption {
-                text: I18n.tr("Seules les actions affichées seront appliquées. Les repas souhaités ne génèrent pas encore de recettes ni de courses automatiques.")
+        Repeater {
+            model: page.assistant.completedActions
+            delegate: Caption {
+                required property string modelData
+                text: "✓ " + modelData
+                color: Theme.accent
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
-            }
-            RowLayout {
-                ActionButton {
-                    text: I18n.tr("Annuler")
-                    onClicked: page.assistant.discard()
-                }
-                ActionButton {
-                    objectName: "applyAiPlanButton"
-                    text: I18n.tr("Appliquer la demande")
-                    primary: true
-                    enabled: !page.assistant.busy && !page.assistant.recording
-                    onClicked: page.assistant.apply()
-                }
             }
         }
         RowLayout {

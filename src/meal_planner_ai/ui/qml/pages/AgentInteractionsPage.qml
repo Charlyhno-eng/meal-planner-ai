@@ -68,7 +68,7 @@ ScrollView {
                 Text {
                     id: architectureLabel
                     anchors.centerIn: parent
-                    text: I18n.tr("Architecture prévue")
+                    text: I18n.tr("Agents connectés")
                     font.pixelSize: 11
                     color: Theme.muted
                 }
@@ -333,7 +333,7 @@ ScrollView {
             }
             Caption {
                 objectName: "agentInteractionsStatus"
-                text: I18n.tr("Orchestrateur actif pour les demandes. Les autres agents et le suivi en direct restent à implémenter.")
+                text: I18n.tr("Orchestrateur, planification, préférences et courses actifs. La vérification des courses reste à implémenter.")
                 Layout.fillWidth: true
             }
         }

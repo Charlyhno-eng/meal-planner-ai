@@ -130,7 +130,7 @@ ColumnLayout {
                             required property var modelData
                             objectName: "grocery-" + modelData.id
                             Layout.fillWidth: true
-                            implicitHeight: 60
+                            implicitHeight: modelData.requiredQuantity ? 78 : 60
                             color: modelData.checked && !page.showAvailable ? "#283631" :
                                                                               Theme.surface
                             MouseArea {
@@ -179,15 +179,27 @@ ColumnLayout {
                                     Layout.leftMargin: 8
                                     Layout.rightMargin: 8
                                 }
-                                Text {
-                                    text: groceryRow.modelData.name + (groceryRow.modelData.periodLabel ? " · " + groceryRow.modelData.periodLabel : "")
-                                    color: groceryRow.modelData.checked && !page.showAvailable
-                                           ? Theme.muted : Theme.text
-                                    font.pixelSize: 14
-                                    font.strikeout: groceryRow.modelData.checked &&
-                                                    !page.showAvailable
+                                ColumnLayout {
                                     Layout.fillWidth: true
-                                    elide: Text.ElideRight
+                                    spacing: 4
+                                    Text {
+                                        text: groceryRow.modelData.name + (groceryRow.modelData.periodLabel ? " · " + groceryRow.modelData.periodLabel : "")
+                                        color: groceryRow.modelData.checked && !page.showAvailable
+                                               ? Theme.muted : Theme.text
+                                        font.pixelSize: 14
+                                        font.strikeout: groceryRow.modelData.checked &&
+                                                        !page.showAvailable
+                                        Layout.fillWidth: true
+                                        elide: Text.ElideRight
+                                    }
+                                    Caption {
+                                        visible: !!groceryRow.modelData.requiredQuantity
+                                        text: I18n.tr("Besoin : ") + (groceryRow.modelData.requiredQuantity || "")
+                                              + I18n.tr(" · Réserve : ") + (groceryRow.modelData.stockQuantity || "")
+                                        Layout.fillWidth: true
+                                        font.pixelSize: 11
+                                        elide: Text.ElideRight
+                                    }
                                 }
                                 Caption {
                                     text: groceryRow.modelData.quantity

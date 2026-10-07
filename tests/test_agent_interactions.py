@@ -110,7 +110,9 @@ def test_agent_map_selection_keyboard_translation_and_geometry(qt_app, tmp_path,
         assert title.property("text") == "Grocery verification"
         assert role.property("text").startswith("Checks the grocery list")
         status = window.findChild(QObject, "agentInteractionsStatus")
-        assert status.property("text").startswith("Orchestrator active for requests.")
+        assert status.property("text").startswith(
+            "Orchestrator, meal planning, preferences and groceries are active."
+        )
 
         nodes = [visual_child(window.contentItem(), f"agentNode{i}") for i in range(5)]
         nodes[0].forceActiveFocus()

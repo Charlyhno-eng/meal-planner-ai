@@ -101,7 +101,7 @@ def test_desktop_navigation_and_dialogs(qt_app):
 
         status = window.findChild(QObject, "agentInteractionsStatus")
         assert status.property("text").startswith(
-            "Orchestrateur actif pour les demandes."
+            "Orchestrateur, planification, préférences et courses actifs."
         )
         QTest.keyClick(window, Qt.Key_1, Qt.ControlModifier)
         QTest.keyClick(window, Qt.Key_7, Qt.ControlModifier)

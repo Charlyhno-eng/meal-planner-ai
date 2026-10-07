@@ -25,9 +25,10 @@ class CoordinatorState(TypedDict, total=False):
 def resolve_period(period, context: dict) -> Period:
     if isinstance(period, Period):
         return period
-    if period == "next_week":
+    if period in ("this_week", "next_week"):
         today = date.fromisoformat(context["today"])
-        start = today + timedelta(days=7 - today.weekday())
+        offset = 7 if period == "next_week" else 0
+        start = today + timedelta(days=offset - today.weekday())
         return Period(start=start, end=start + timedelta(days=6))
     settings = context["settings"]
     start = date.fromisoformat(settings["start"])

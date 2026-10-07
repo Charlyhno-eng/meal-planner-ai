@@ -39,7 +39,7 @@ ScrollView {
                         font.pixelSize: 26
                     }
                     Caption {
-                        text: page.store.settings.count + I18n.tr(" repas · ")
+                        text: page.store.meals.length + I18n.tr(" repas · ")
                               + page.store.settings.people + I18n.tr(" personnes")
 
                         color: "#c5d3c6"
@@ -62,7 +62,7 @@ ScrollView {
                     Layout.fillWidth: true
                 }
                 Caption {
-                    text: page.store.period
+                    text: I18n.tr("Période configurée : ") + page.store.period
                 }
             }
             ActionButton {
@@ -80,8 +80,9 @@ ScrollView {
                 font.pixelSize: 20
             }
             Caption {
-                text: I18n.tr("En attente de recettes par l’agent de planification.")
+                text: I18n.tr("Anciennes demandes sans recette. Envoyez-les à nouveau dans l’assistant pour les planifier.")
                 Layout.fillWidth: true
+                wrapMode: Text.WordWrap
             }
             Repeater {
                 model: page.store.requestedMeals
@@ -129,7 +130,7 @@ ScrollView {
                     required property int index
                     Layout.fillWidth: true
                     Layout.preferredWidth: 260
-                    implicitHeight: 278
+                    implicitHeight: modelData.requestId ? 354 : 278
                     border.color: cardHover.hovered ? "#738775" : Theme.border
                     HoverHandler {
                         id: cardHover
@@ -169,6 +170,13 @@ ScrollView {
                                       mealCard.modelData.guests ? I18n.tr(" · invités") : "")
                             font.pixelSize: 12
                         }
+                        Caption {
+                            text: mealCard.modelData.periodLabel || ""
+                            visible: text.length > 0
+                            font.pixelSize: 11
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                        }
                         RowLayout {
                             Layout.fillWidth: true
                             ActionButton {
@@ -182,6 +190,7 @@ ScrollView {
                                                  + mealCard.modelData.title
                             }
                             ActionButton {
+                                visible: !mealCard.modelData.requestId
                                 text: "↻"
                                 quiet: true
                                 implicitHeight: 32
@@ -192,6 +201,12 @@ ScrollView {
                                 ToolTip.text: I18n.tr("Changer de repas")
                                 onClicked: page.store.replaceMeal(mealCard.modelData.id)
                             }
+                        }
+                        ActionButton {
+                            visible: !!mealCard.modelData.requestId
+                            text: I18n.tr("Retirer")
+                            quiet: true
+                            onClicked: page.store.removeRequest(mealCard.modelData.requestId)
                         }
                     }
                 }

@@ -1,6 +1,5 @@
-"""Editable in-memory session data for the desktop application."""
+"""Desktop session services and persisted generated meals and purchases."""
 
-from collections import defaultdict
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -8,17 +7,24 @@ from pydantic import ValidationError
 from PySide6.QtCore import Property, QObject, Signal, Slot
 from PySide6.QtGui import QGuiApplication
 
+from meal_planner_ai.agents.food_preferences import (
+    PreferenceConflict,
+    check_preferences,
+)
+from meal_planner_ai.agents.grocery_list import calculate_groceries
 from meal_planner_ai.models.coordinator import (
     CoordinatorData,
     CoordinatorProposal,
     RequestedMeal,
     ShoppingItem,
 )
+from meal_planner_ai.models.execution import MealExecution
 from meal_planner_ai.models.planning import (
     PlanningProposal,
     PlanningSettings,
     validate_recipes,
 )
+from meal_planner_ai.models.recipes import Ingredient
 from meal_planner_ai.storage.config import (
     load_glm_key,
     load_language,
@@ -29,6 +35,7 @@ from meal_planner_ai.storage.coordinator import load_coordinator, save_coordinat
 from meal_planner_ai.ui.assistant import PlanningAssistant
 from meal_planner_ai.ui.i18n import ENGLISH, canonical_food, translate, translate_food
 from meal_planner_ai.workflow.coordinator import build_coordinator_workflow
+from meal_planner_ai.workflow.meal_request import calculate_execution_groceries
 
 MONTHS = [
     "janvier",
@@ -55,7 +62,7 @@ def quantity_text(amount: float, unit: str, language: str = "fr") -> str:
 
 
 class DemoState(QObject):
-    """Editable session data with optional, explicitly requested local AI planning."""
+    """Editable household and stock data, with atomic agent-result application."""
 
     recipe_catalogue = []
     english_translations = ENGLISH
@@ -120,9 +127,13 @@ class DemoState(QObject):
     def planning_context(self):
         return {
             "today": date.today().isoformat(),
+            "language": self._language,
             "settings": self.settings,
             "coordinator": self._coordinator_data.model_dump(mode="json"),
             "pantry": [item.copy() for item in self._pantry],
+            "planned_ingredients": [
+                item.model_dump() for item in self._planned_ingredients()
+            ],
             "guests": [
                 {"meal": meal, "count": count} for meal, count in self._guests.items()
             ],
@@ -146,6 +157,7 @@ class DemoState(QObject):
                 ),
             )
             for item in self._coordinator_data.meals
+            if item.recipe is None
         ]
 
     def _save_coordinator(self, data):
@@ -154,7 +166,20 @@ class DemoState(QObject):
         if self._coordinator_path is not None:
             save_coordinator(self._coordinator_path, data)
 
-    def apply_commands(self, proposal: CoordinatorProposal):
+    def apply_execution(self, execution: MealExecution):
+        """Revalidate the complete batch before one atomic persistence operation."""
+        execution = MealExecution.model_validate(execution.model_dump())
+        if execution.commands.clarification:
+            raise ValueError("A clarification cannot be applied")
+        check_preferences(execution.meals, self._settings)
+        expected = calculate_execution_groceries(
+            execution.commands, execution.meals, self.planning_context()
+        )
+        if expected != execution.groceries:
+            raise ValueError("Grocery requirements differ from the current plan")
+        self.apply_commands(execution.commands, planned_meals=execution.meals)
+
+    def apply_commands(self, proposal: CoordinatorProposal, planned_meals=None):
         # Validate again against the current household before staging any changes.
         result = build_coordinator_workflow(
             reason=lambda state: {"proposal": proposal}
@@ -165,15 +190,19 @@ class DemoState(QObject):
         data = self._coordinator_data.model_copy(deep=True)
         pantry = [item.copy() for item in self._pantry]
         next_id = self._next_id
+        planned = iter(planned_meals) if planned_meals is not None else None
         for action in commands.actions:
             if action.service == "meal_request":
-                data.meals.append(
-                    RequestedMeal(
+                meal = (
+                    next(planned)
+                    if planned is not None
+                    else RequestedMeal(
                         title=action.title,
                         servings=action.servings,
                         period=action.period,
                     )
                 )
+                data.meals.append(meal)
             elif action.service == "grocery_add":
                 data.groceries.append(
                     ShoppingItem(**action.model_dump(exclude={"service"}))
@@ -199,12 +228,18 @@ class DemoState(QObject):
         self._coordinator_data = data
         self._pantry = pantry
         self._next_id = next_id
-        if any(action.service == "pantry_set" for action in commands.actions):
+        if planned_meals or any(
+            action.service == "pantry_set" for action in commands.actions
+        ):
             self._checked = {key for key in self._checked if key.startswith("request:")}
         self.changed.emit()
 
     @Slot(str, result=bool)
     def removeRequest(self, record_id):
+        removes_recipe = any(
+            item.id == record_id and item.recipe is not None
+            for item in self._coordinator_data.meals
+        )
         data = self._coordinator_data.model_copy(deep=True)
         data.meals = [item for item in data.meals if item.id != record_id]
         data.groceries = [item for item in data.groceries if item.id != record_id]
@@ -215,6 +250,8 @@ class DemoState(QObject):
             return False
         self._coordinator_data = data
         self._checked.discard("request:" + record_id)
+        if removes_recipe:
+            self._checked = {key for key in self._checked if key.startswith("request:")}
         self.changed.emit()
         return True
 
@@ -387,42 +424,101 @@ class DemoState(QObject):
             ],
         )
 
+    def _generated_meals(self):
+        return [
+            item for item in self._coordinator_data.meals if item.recipe is not None
+        ]
+
+    def _generated_meal(self, item, index):
+        recipe = item.recipe
+        servings = item.servings + item.guests
+        return dict(
+            id=len(self._plan) + index,
+            requestId=item.id,
+            title=recipe.title,
+            subtitle=recipe.subtitle,
+            minutes=recipe.minutes,
+            vegetarian=recipe.vegetarian,
+            color="#cdb781",
+            art=index,
+            label=f"{self.translate('Repas ')}{len(self._plan) + index + 1}",
+            servings=servings,
+            guests=item.guests,
+            periodLabel=(
+                f"{item.period.start.isoformat()} — {item.period.end.isoformat()}"
+            ),
+            steps=recipe.steps,
+            ingredients=[
+                {
+                    "name": translate_food(ingredient.name, self._language),
+                    "quantity": quantity_text(
+                        ingredient.amount * servings / recipe.servings,
+                        ingredient.unit,
+                        self._language,
+                    ),
+                }
+                for ingredient in recipe.ingredients
+            ],
+        )
+
     @Property("QVariantList", notify=changed)
     def meals(self):
-        return [self._meal(i) for i in range(len(self._plan))]
+        return [self._meal(i) for i in range(len(self._plan))] + [
+            self._generated_meal(item, i)
+            for i, item in enumerate(self._generated_meals())
+        ]
 
     @Property("QVariantList", notify=changed)
     def guests(self):
-        return [self._meal(i) for i in self._guests if i < len(self._plan)]
+        return [meal for meal in self.meals if meal["guests"]]
 
-    def _groceries(self):
-        needed = defaultdict(float)
-        categories = {}
+    def _planned_ingredients(self):
+        ingredients = []
         for index, recipe_id in enumerate(self._plan):
             servings = self._settings["people"] + self._guests.get(index, 0)
             for name, amount, unit, category in self.recipe_catalogue[recipe_id][
                 "ingredients"
             ]:
-                key = (name, unit)
-                needed[key] += amount * servings
-                categories[key] = category
-        available = defaultdict(float)
-        for item in self._pantry:
-            available[(item["name"].casefold(), item["unit"])] += item["amount"]
+                ingredients.append(
+                    Ingredient(
+                        name=name,
+                        amount=amount * servings,
+                        unit=unit,
+                        category=category,
+                    )
+                )
+        for meal in self._generated_meals():
+            for ingredient in meal.recipe.ingredients:
+                ingredients.append(
+                    ingredient.model_copy(
+                        update={
+                            "amount": ingredient.amount
+                            * (meal.servings + meal.guests)
+                            / meal.recipe.servings
+                        }
+                    )
+                )
+        return ingredients
+
+    def _groceries(self):
         result = []
-        for (name, unit), amount in needed.items():
-            stock = available[(name.casefold(), unit)]
-            remaining = max(0, amount - stock)
-            key = f"{name}|{unit}"
+        for item in calculate_groceries(self._planned_ingredients(), self._pantry):
+            key = f"{item.name}|{item.unit}"
             result.append(
                 {
                     "id": key,
-                    "name": self.translate(name),
-                    "category": categories[(name, unit)],
+                    "name": translate_food(item.name, self._language),
+                    "category": item.category,
                     "quantity": quantity_text(
-                        remaining or amount, unit, self._language
+                        item.amount or item.required, item.unit, self._language
                     ),
-                    "available": remaining == 0,
+                    "available": item.amount == 0,
+                    "requiredQuantity": quantity_text(
+                        item.required, item.unit, self._language
+                    ),
+                    "stockQuantity": quantity_text(
+                        item.available, item.unit, self._language
+                    ),
                     "checked": key in self._checked,
                 }
             )
@@ -470,6 +566,11 @@ class DemoState(QObject):
                 "Choisissez 1 à 14 jours, 1 à 28 repas et 1 à 12 personnes, "
                 "avec une période valide."
             )
+            return False
+        try:
+            check_preferences(self._generated_meals(), settings.model_dump())
+        except PreferenceConflict as exc:
+            self._notify(str(exc))
             return False
         previous = self._settings
         self._settings = settings.model_dump(mode="json")
@@ -533,9 +634,19 @@ class DemoState(QObject):
 
     @Slot(int, int)
     def setGuests(self, index, count):
-        if not (0 <= index < len(self._plan) and 0 <= count <= 12):
+        if not (0 <= index < len(self.meals) and 0 <= count <= 12):
             return
-        if count:
+        if index >= len(self._plan):
+            item = self._generated_meals()[index - len(self._plan)]
+            data = self._coordinator_data.model_copy(deep=True)
+            next(meal for meal in data.meals if meal.id == item.id).guests = count
+            try:
+                self._save_coordinator(data)
+            except (ValueError, OSError):
+                self._notify("Impossible d’enregistrer les demandes. Réessayez.")
+                return
+            self._coordinator_data = data
+        elif count:
             self._guests[index] = count
         else:
             self._guests.pop(index, None)

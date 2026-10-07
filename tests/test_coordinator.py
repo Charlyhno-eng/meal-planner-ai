@@ -236,7 +236,7 @@ def test_glm_uses_structured_json_and_keeps_credentials_out_of_context(monkeypat
             )
         )
 
-    monkeypatch.setattr("meal_planner_ai.agents.coordinator.urlopen", respond)
+    monkeypatch.setattr("meal_planner_ai.providers.glm.urlopen", respond)
     result = interpret_request({"request": "a tiramisu", "context": {}}, "secret-key")
     assert len(result["proposal"].actions) == 3
     assert len(calls) == 1
@@ -247,7 +247,7 @@ def test_provider_errors_do_not_expose_credentials_or_response_body(monkeypatch,
     def fail(*args, **kwargs):
         raise HTTPError(GLM_URL, code, "secret-key", {}, io.BytesIO(b"secret-key"))
 
-    monkeypatch.setattr("meal_planner_ai.agents.coordinator.urlopen", fail)
+    monkeypatch.setattr("meal_planner_ai.providers.glm.urlopen", fail)
     with pytest.raises(CoordinatorUnavailable) as error:
         interpret_request({"request": "test", "context": {}}, "secret-key")
     assert "secret-key" not in str(error.value)
@@ -271,12 +271,12 @@ def test_invalid_or_truncated_provider_output_is_rejected(monkeypatch, body):
     def respond(*args, **kwargs):
         yield io.StringIO(body)
 
-    monkeypatch.setattr("meal_planner_ai.agents.coordinator.urlopen", respond)
+    monkeypatch.setattr("meal_planner_ai.providers.glm.urlopen", respond)
     with pytest.raises(ValueError):
         interpret_request({"request": "test", "context": {}}, "key")
 
 
-def test_clarification_follow_up_and_stale_review(qt_app, monkeypatch):
+def test_clarification_follow_up_and_stale_context(qt_app, monkeypatch, fake_recipes):
     state = DemoState()
     state.setGlmApiKey("key")
     calls = []
@@ -293,6 +293,18 @@ def test_clarification_follow_up_and_stale_review(qt_app, monkeypatch):
     monkeypatch.setattr(
         "meal_planner_ai.workflow.coordinator.interpret_request", reason
     )
+    from threading import Event
+
+    ready, release = Event(), Event()
+
+    def blocked_recipe(system, payload, api_key):
+        ready.set()
+        assert release.wait(2)
+        return fake_recipes(system, payload, api_key)
+
+    monkeypatch.setattr(
+        "meal_planner_ai.agents.meal_planning.agent.complete_json", blocked_recipe
+    )
     assistant = state.assistant
     try:
         assistant.plan("Ajouter des pommes")
@@ -300,18 +312,23 @@ def test_clarification_follow_up_and_stale_review(qt_app, monkeypatch):
         assert assistant.reply == "Combien de pommes ?"
         assert assistant.proposal == {}
         assistant.plan("Trois, et un tiramisu pour six")
-        wait_for_job(assistant)
-        assert assistant.proposal["actions"][0]["servings"] == 6
+        assert ready.wait(2)
         state.saveFood(-1, "Rice", 100, "g", "Épicerie")
-        assistant.apply()
+        release.set()
+        wait_for_job(assistant)
         assert "changé" in assistant.error
         assert state.requestedMeals == []
         assert assistant.proposal == {}
+        assert state.meals == []
+        assert "Aucun changement" in assistant.status
     finally:
+        release.set()
         assistant.shutdown()
 
 
-def test_home_voice_text_purchase_and_pending_meal_views(qt_app, monkeypatch, tmp_path):
+def test_home_voice_text_purchase_and_planned_meal_views(
+    qt_app, monkeypatch, tmp_path, fake_recipes
+):
     state = DemoState(config_path=tmp_path / "config.toml")
     state.setGlmApiKey("key")
     engine = QQmlApplicationEngine()
@@ -337,18 +354,25 @@ def test_home_voice_text_purchase_and_pending_meal_views(qt_app, monkeypatch, tm
         button = window.findChild(QObject, "generatePlanButton")
         QMetaObject.invokeMethod(button, "click")
         wait_for_job(state.assistant)
-        assert len(state.assistant.proposal["titles"]) == 2
-        assert state.groceries == state.requestedMeals == []
-        apply_button = window.findChild(QObject, "applyAiPlanButton")
-        QMetaObject.invokeMethod(apply_button, "click")
-        assert state.requestedMeals[0]["servings"] == 6
-        assert state.groceries[0]["quantity"] == "3 pièces"
+        assert state.assistant.proposal == {}
+        assert len(state.assistant.completedActions) == 2
+        assert state.requestedMeals == []
+        assert state.meals[0]["title"] == "Tiramisu"
+        assert state.meals[0]["servings"] == 6
+        assert (
+            next(item for item in state.groceries if item.get("requestId"))["quantity"]
+            == "3 pièces"
+        )
+        assert "enregistrée" in state.assistant.reply
         for language in ("fr", "en"):
             state.setLanguage(language)
             for index in (0, 2, 5):
                 window.setProperty("currentPage", index)
                 QTest.qWait(20)
-        assert state.groceries[0]["name"] == "Potatoes"
+        assert (
+            next(item for item in state.groceries if item.get("requestId"))["name"]
+            == "Potatoes"
+        )
         assert not warnings, "\n".join(warnings)
     finally:
         state.assistant.shutdown()
@@ -374,7 +398,7 @@ def test_no_key_no_network_and_malformed_response_no_application(qt_app, monkeyp
         called.append(True)
         raise ValueError("secret-provider-body")
 
-    monkeypatch.setattr("meal_planner_ai.agents.coordinator.urlopen", unexpected)
+    monkeypatch.setattr("meal_planner_ai.providers.glm.urlopen", unexpected)
     assistant = state.assistant
     try:
         assistant.plan("Un tiramisu pour six")

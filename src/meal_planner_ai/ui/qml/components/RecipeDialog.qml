@@ -115,6 +115,7 @@ Modal {
             anchors.fill: parent
             anchors.margins: 16
             ActionButton {
+                visible: !!dialog.meal && !dialog.meal.requestId
                 text: I18n.tr("↻  Changer de repas")
                 onClicked: dialog.store.replaceMeal(dialog.mealId)
             }

@@ -7,6 +7,8 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from meal_planner_ai.models.recipes import Recipe
+
 
 class CommandModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -32,7 +34,7 @@ class Period(CommandModel):
         return self
 
 
-PeriodRequest = Literal["current", "next_week"] | Period
+PeriodRequest = Literal["current", "this_week", "next_week"] | Period
 Name = Annotated[str, Field(min_length=1, max_length=100)]
 Quantity = Annotated[float, Field(gt=0, le=100000, allow_inf_nan=False, strict=True)]
 Unit = Literal["g", "ml", "pièce"]
@@ -94,6 +96,17 @@ class RequestedMeal(CommandModel):
     title: Name
     servings: int = Field(ge=1, le=32, strict=True)
     period: Period
+    recipe: Recipe | None = None
+    guests: int = Field(default=0, ge=0, le=12, strict=True)
+
+    @model_validator(mode="after")
+    def matching_recipe(self):
+        if self.recipe and (
+            self.recipe.servings != self.servings
+            or self.recipe.title.casefold() != self.title.casefold()
+        ):
+            raise ValueError("Recipe differs from the requested meal")
+        return self
 
 
 class ShoppingItem(CommandModel):

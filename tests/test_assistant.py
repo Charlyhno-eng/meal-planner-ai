@@ -222,7 +222,7 @@ def wait_for_job(assistant):
     pytest.fail("Background job did not finish")
 
 
-def test_home_dictation_review_and_apply(qt_app, monkeypatch):
+def test_home_dictation_and_automatic_application(qt_app, monkeypatch, fake_recipes):
     demo = DemoState()
     assistant = demo.assistant
     engine = QQmlApplicationEngine()
@@ -244,7 +244,7 @@ def test_home_dictation_review_and_apply(qt_app, monkeypatch):
         assert request.property("text") == "Deux repas pour trois personnes"
 
         monkeypatch.setattr(
-            "meal_planner_ai.agents.coordinator.urlopen",
+            "meal_planner_ai.providers.glm.urlopen",
             lambda *args, **kwargs: (_ for _ in ()).throw(URLError("offline")),
         )
         assistant.plan(request.property("text"))
@@ -252,46 +252,34 @@ def test_home_dictation_review_and_apply(qt_app, monkeypatch):
         assert "GLM" in assistant.error
         assert demo.settings == before
 
-        class FakeWorkflow:
-            def invoke(self, state, config=None):
-                assert state["request"] in (
-                    "Deux repas pour trois personnes",
-                    "Une autre demande",
-                )
-                assert state["context"]["pantry"]
-                from meal_planner_ai.workflow.coordinator import (
-                    build_coordinator_workflow,
-                )
-
-                commands = CoordinatorProposal(
+        monkeypatch.setattr(
+            "meal_planner_ai.workflow.coordinator.interpret_request",
+            lambda state, key: {
+                "proposal": CoordinatorProposal(
                     actions=[
                         {"service": "meal_request", "title": "Tiramisu", "servings": 6}
                     ]
                 )
-                return build_coordinator_workflow(
-                    reason=lambda s: {"proposal": commands}
-                ).invoke(state)
-
-        monkeypatch.setattr(
-            "meal_planner_ai.ui.assistant.build_coordinator_workflow",
-            lambda **kwargs: FakeWorkflow(),
+            },
         )
         assistant.plan(request.property("text"))
         wait_for_job(assistant)
-        assert assistant.proposal["actions"][0]["servings"] == 6
+        assert not assistant.error
+        assert not assistant.proposal
+        assert demo.meals[-1]["servings"] == 6
+        assert demo.meals[-1]["title"] == "Tiramisu"
         assert demo.settings == before
         request.setProperty("text", "Une autre demande")
-        assert not assistant.proposal
+        assert not assistant.completedActions
         assistant.plan(request.property("text"))
         wait_for_job(assistant)
         demo.setLanguage("en")
         QTest.qWait(10)
-        assistant.apply()
-        QTest.qWait(10)
         assert window.property("currentPage") == 5
         assert demo.settings == before
-        assert demo.requestedMeals[0]["servings"] == 6
+        assert len(demo.meals) == 9
         assert not assistant.proposal
+        assert "Request saved" in assistant.reply
         window.setProperty("currentPage", 5)
         QTest.qWait(10)
         button = visual_child(window.contentItem(), "dictationButton")

@@ -1,4 +1,4 @@
-"""Qt bridge for dictation and reviewable local AI planning."""
+"""Qt bridge for local dictation, agent progress and automatic meal creation."""
 
 from PySide6.QtCore import (
     Property,
@@ -13,28 +13,36 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QGuiApplication
 
-from meal_planner_ai.agents.coordinator import CoordinatorUnavailable
+from meal_planner_ai.errors import MealPlannerError
 from meal_planner_ai.models.coordinator import CoordinatorProposal
+from meal_planner_ai.models.execution import MealExecution
 from meal_planner_ai.models.planning import PlanningProposal
 from meal_planner_ai.ui.speech import LocalParakeet, MissingParakeetError
-from meal_planner_ai.workflow.coordinator import build_coordinator_workflow
+from meal_planner_ai.workflow.meal_request import build_meal_workflow
 
 
 class JobSignals(QObject):
     done = Signal(object, str)
+    progress = Signal(str)
 
 
 class Job(QRunnable):
-    def __init__(self, operation, sanitize_errors=False):
+    def __init__(self, operation, sanitize_errors=False, with_progress=False):
         super().__init__()
         self.operation = operation
         self.sanitize_errors = sanitize_errors
+        self.with_progress = with_progress
         self.signals = JobSignals()
 
     def run(self):
         try:
-            self.signals.done.emit(self.operation(), "")
-        except CoordinatorUnavailable as exc:
+            result = (
+                self.operation(self.signals.progress.emit)
+                if self.with_progress
+                else self.operation()
+            )
+            self.signals.done.emit(result, "")
+        except MealPlannerError as exc:
             self.signals.done.emit(None, str(exc))
         except Exception as exc:
             self.signals.done.emit(
@@ -60,6 +68,9 @@ class PlanningAssistant(QObject):
         self._error = ""
         self._proposal = None
         self._reply = ""
+        self._status = ""
+        self._steps = []
+        self._completed_commands = None
         self._context = None
         self._conversation = []
         self._request = ""
@@ -92,6 +103,42 @@ class PlanningAssistant(QObject):
     def reply(self):
         return self.store.translate(self._reply)
 
+    @Property(str, notify=changed)
+    def status(self):
+        return self.store.translate(self._status)
+
+    @Property("QVariantList", notify=changed)
+    def steps(self):
+        return [self.store.translate(step) for step in self._steps]
+
+    @Property("QVariantList", notify=changed)
+    def completedActions(self):
+        if self._completed_commands is None:
+            return []
+        lines = []
+        for action in self._completed_commands.actions:
+            if action.service == "meal_request":
+                line = self.store.translate("Repas ajouté") + f" : {action.title}"
+            else:
+                label = "À acheter" if action.service == "grocery_add" else "En réserve"
+                line = (
+                    self.store.translate(label)
+                    + f" : {self.store.translate(action.name)}"
+                )
+            if action.service != "pantry_set":
+                line += (
+                    f" · {action.period.start.isoformat()}"
+                    f" — {action.period.end.isoformat()}"
+                )
+            lines.append(line)
+        return lines
+
+    @Slot(str)
+    def _progress(self, message):
+        self._status = message
+        self._steps.append(message)
+        self.changed.emit()
+
     @Property(bool, notify=changed)
     def modelInstalled(self):
         return self.speech.is_installed()
@@ -114,6 +161,7 @@ class PlanningAssistant(QObject):
             return
         self._model_downloading = True
         self._model_error = ""
+        self._status = "Téléchargement du modèle de dictée Parakeet…"
         self._run(self.speech.download, self._model_downloaded)
 
     @Slot(object, str)
@@ -121,6 +169,7 @@ class PlanningAssistant(QObject):
         self._busy = False
         self._job = None
         self._model_downloading = False
+        self._status = ""
         self._model_error = (
             "Téléchargement impossible. Vérifiez la connexion et l’espace disque, "
             "puis réessayez."
@@ -168,11 +217,16 @@ class PlanningAssistant(QObject):
             result["titles"].append(f"{label} · {title}")
         return result
 
-    def _run(self, operation, callback, sanitize_errors=False):
+    def _run(self, operation, callback, sanitize_errors=False, with_progress=False):
         self._busy = True
         self._error = ""
-        self._job = Job(operation, sanitize_errors=sanitize_errors)
+        if not with_progress:
+            self._steps = []
+        self._job = Job(
+            operation, sanitize_errors=sanitize_errors, with_progress=with_progress
+        )
         self._job.signals.done.connect(callback)
+        self._job.signals.progress.connect(self._progress)
         self.changed.emit()
         self._pool.start(self._job)
 
@@ -182,6 +236,9 @@ class PlanningAssistant(QObject):
             return
         self._proposal = None
         self._reply = ""
+        self._status = ""
+        self._steps = []
+        self._completed_commands = None
         if not request.strip():
             self._error = "Décrivez votre demande."
             self.changed.emit()
@@ -202,18 +259,22 @@ class PlanningAssistant(QObject):
         self._context = context
         self._request = request.strip()
         conversation = self._conversation.copy()
-        workflow = build_coordinator_workflow(api_key=self.store.glmApiKey)
+        api_key = self.store.glmApiKey
+        self._status = "Préparation de votre demande et du contexte du foyer…"
         self._run(
-            lambda: workflow.invoke(
+            lambda progress: build_meal_workflow(
+                api_key=api_key, progress=progress
+            ).invoke(
                 {
                     "request": request.strip(),
                     "context": context,
                     "conversation": conversation,
                 },
                 {"recursion_limit": 60},
-            )["proposal"],
+            )["result"],
             self._planned,
             sanitize_errors=True,
+            with_progress=True,
         )
 
     @Slot(object, str)
@@ -223,7 +284,53 @@ class PlanningAssistant(QObject):
         self._proposal = None
         self._error = error
         if not error:
+            if isinstance(proposal, MealExecution):
+                if proposal.commands.clarification:
+                    proposal = proposal.commands
+                else:
+                    if not self._context_matches():
+                        self._error = (
+                            "Les données ont changé. Envoyez à nouveau votre demande."
+                        )
+                    else:
+                        try:
+                            self._progress(
+                                "Enregistrement des repas et actualisation des courses…"
+                            )
+                            self.store.apply_execution(proposal)
+                        except OSError:
+                            self._error = (
+                                "Impossible d’enregistrer les demandes. Réessayez."
+                            )
+                        except MealPlannerError as exc:
+                            self._error = str(exc)
+                        except ValueError:
+                            self._error = (
+                                "La proposition IA est invalide. "
+                                "Précisez la demande et réessayez."
+                            )
+                        else:
+                            self._completed_commands = proposal.commands
+                            self._conversation.clear()
+                            self._reply = (
+                                "Demande enregistrée. "
+                                "Vos repas et vos courses sont à jour."
+                            )
+                            self._progress(
+                                "Terminé : les changements ont été enregistrés."
+                            )
+                            self.applied.emit()
+                    if self._error:
+                        self._status = (
+                            "Traitement interrompu. "
+                            "Aucun changement n’a été enregistré."
+                        )
+                    self.changed.emit()
+                    return
             if isinstance(proposal, CoordinatorProposal) and proposal.clarification:
+                self._status = (
+                    "Une précision est nécessaire avant de modifier vos données."
+                )
                 self._reply = proposal.clarification
                 self._conversation = [
                     *self._conversation,
@@ -232,19 +339,36 @@ class PlanningAssistant(QObject):
                 ][-6:]
             else:
                 self._proposal = proposal
+        if self._error:
+            self._status = "Traitement interrompu. Aucun changement n’a été enregistré."
         self.changed.emit()
+
+    def _context_matches(self):
+        if self._context is None:
+            return True
+        # Switching interface language does not change ingredient quantities or dates.
+        previous = {k: v for k, v in self._context.items() if k != "language"}
+        current = {
+            k: v for k, v in self.store.planning_context().items() if k != "language"
+        }
+        return previous == current
 
     @Slot()
     def discard(self):
+        if self._busy:
+            return
         self._proposal = None
         self._reply = ""
+        self._completed_commands = None
+        self._status = ""
+        self._steps = []
         self.changed.emit()
 
     @Slot()
     def apply(self):
         if self._proposal is None or self._busy or self._recording:
             return
-        if self._context is not None and self._context != self.store.planning_context():
+        if not self._context_matches():
             self._proposal = None
             self._error = "Les données ont changé. Envoyez à nouveau votre demande."
             self.changed.emit()
@@ -375,6 +499,7 @@ class PlanningAssistant(QObject):
             self._error = "Enregistrement trop court. Réessayez."
             self.changed.emit()
             return
+        self._status = "Transcription locale de votre dictée avec Parakeet…"
         self._run(lambda: self.speech.transcribe(pcm, 16000), self._transcribed)
 
     @Slot(object, str)
@@ -382,6 +507,7 @@ class PlanningAssistant(QObject):
         self._busy = False
         self._job = None
         self._error = error
+        self._status = ""
         if not error:
             self.transcribed.emit(text)
         self.changed.emit()
