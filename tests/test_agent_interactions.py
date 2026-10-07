@@ -146,7 +146,6 @@ def test_agent_map_selection_keyboard_translation_and_geometry(
         pulses = [
             visual_child(window.contentItem(), f"agentFlowPulse{i}") for i in range(9)
         ]
-        links = page.property("workflowLinks").toVariant()
         for index, node in enumerate(nodes):
             position = node.mapToScene(QPoint(30, 30)).toPoint()
             QTest.mouseClick(window, Qt.LeftButton, Qt.NoModifier, position)
@@ -154,40 +153,37 @@ def test_agent_map_selection_keyboard_translation_and_geometry(
             assert page.property("selectedAgent") == index
             assert title.property("text") == node.property("title")
             assert role.property("text")
-            for pulse, link in zip(pulses, links):
-                expected = index in (link["fromAgent"], link["toAgent"])
-                expected = expected and link["to"] != "verification"
-                assert pulse.property("animating") == expected
+            assert all(p.property("animating") for p in pulses)
+            assert all(p.isVisible() for p in pulses)
             assert [n.property("selected") for n in nodes] == [
                 i == index for i in range(6)
             ]
 
-        # Motion advances along actual connections and can be paused. Planned
-        # verification stays static, and hidden pages do not keep animating.
-        pulse = pulses[5]  # pantry -> planning (pantry is selected)
-        before = pulse.property("progress")
+        # Every connection advances, including planned verification and links
+        # unrelated to the selection. Pause and page visibility control them all.
+        before = [p.property("progress") for p in pulses]
         QTest.qWait(80)
-        assert pulse.property("progress") != before
+        assert all(p.property("progress") != value for p, value in zip(pulses, before))
         toggle = visual_child(window.contentItem(), "agentAnimationToggle")
         QMetaObject.invokeMethod(toggle, "clicked")
         assert not page.property("motionEnabled")
         assert not any(p.property("animating") for p in pulses)
-        before = pulse.property("progress")
+        before = [p.property("progress") for p in pulses]
         QTest.qWait(60)
-        assert pulse.property("progress") == before
+        assert [p.property("progress") for p in pulses] == before
         window.setProperty("currentPage", 5)
         qt_app.processEvents()
         window.setProperty("currentPage", 6)
         qt_app.processEvents()
         assert not any(p.property("animating") for p in pulses)
         QMetaObject.invokeMethod(toggle, "clicked")
-        assert pulse.property("animating")
+        assert all(p.property("animating") for p in pulses)
         window.setProperty("currentPage", 5)
         qt_app.processEvents()
         assert not any(p.property("animating") for p in pulses)
         window.setProperty("currentPage", 6)
         qt_app.processEvents()
-        assert pulse.property("animating")
+        assert all(p.property("animating") for p in pulses)
         assert nodes[4].property("planned")
 
         # Switching language updates the selected node and inspector in place.

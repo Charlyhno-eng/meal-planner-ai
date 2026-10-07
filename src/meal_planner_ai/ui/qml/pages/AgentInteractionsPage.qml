@@ -245,8 +245,7 @@ ScrollView {
                         objectName: "agentFlowPulse" + index
                         property real progress: 0
                         readonly property var position: graph.pointAt(graph.routes[index].points, progress)
-                        readonly property bool related: modelData.fromAgent === page.selectedAgent || modelData.toAgent === page.selectedAgent
-                        readonly property bool active: page.visible && related && modelData.to !== "verification"
+                        readonly property bool active: page.visible
                         readonly property bool animating: active && page.motionEnabled
                         x: position.x - width / 2
                         y: position.y - height / 2

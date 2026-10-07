@@ -67,7 +67,8 @@ over an icon to see its page name.
   The separate grocery verification agent remains
   planned and uses a dashed connection. The map uses separate, rounded paths
   without crossings. Select an agent to highlight its incoming and outgoing
-  exchanges; moving dots illustrate their direction. Use **Pause** / **Animate**
+  exchanges; moving dots illustrate the direction of every connection at once,
+  including the planned verification connection. Use **Pause** / **Animate**
   to control this animation, which stops when the page is hidden. The animation
   illustrates the architecture; live stage history is in the assistant.
 
