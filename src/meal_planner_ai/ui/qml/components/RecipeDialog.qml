@@ -59,6 +59,8 @@ Modal {
             Repeater {
                 model: dialog.meal ? dialog.meal.ingredients : []
                 RowLayout {
+                    id: ingredientRow
+                    required property int index
                     required property var modelData
                     Layout.fillWidth: true
                     Text {
@@ -69,6 +71,30 @@ Modal {
                     }
                     Caption {
                         text: parent.modelData.quantity
+                    }
+                    Repeater {
+                        model: [
+                            { label: I18n.tr("Réserve"), covered: ingredientRow.modelData.inPantry },
+                            { label: I18n.tr("Courses"), covered: ingredientRow.modelData.inGroceries }
+                        ]
+                        Label {
+                            required property var modelData
+                            text: modelData.label + " " + (modelData.covered ? "✓" : "·")
+                            color: modelData.covered ? Theme.accent : Theme.muted
+                            font.pixelSize: 11
+                            Accessible.name: text
+                        }
+                    }
+                    ActionButton {
+                        objectName: "add-ingredient-" + ingredientRow.index
+                        visible: ingredientRow.modelData.missingAmount > 0.000000001
+                        text: "+"
+                        quiet: true
+                        implicitHeight: 32
+                        Accessible.name: I18n.tr("Ajouter aux courses") + " : " + ingredientRow.modelData.name
+                        ToolTip.visible: hovered
+                        ToolTip.text: I18n.tr("Ajouter aux courses")
+                        onClicked: dialog.store.addIngredientToGroceries(dialog.mealId, ingredientRow.index)
                     }
                 }
             }

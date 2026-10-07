@@ -115,3 +115,55 @@ def test_meal_count_is_independent_of_period_and_guests_follow_meal_ids():
     assert demo.meals[8]["servings"] == 5
     assert demo.configure("2026-10-07", 1, 28, 2, False, "")
     assert len(demo.meals) == 28
+
+
+def test_recipe_coverage_tracks_stock_guests_and_units():
+    demo = DemoState()
+    demo.configure("2026-10-07", 1, 1, 2, False, "")
+    courgettes = demo.meals[0]["ingredients"][2]
+    assert courgettes["inPantry"]
+    assert not courgettes["inGroceries"]
+    demo.setGuests(0, 2)
+    assert not demo.meals[0]["ingredients"][2]["inPantry"]
+    assert demo.meals[0]["ingredients"][2]["inGroceries"]
+    assert demo.saveFood(-1, "Quinoa", 1000, "ml", "Épicerie")
+    assert not demo.meals[0]["ingredients"][0]["inPantry"]
+    assert demo.meals[0]["ingredients"][0]["inGroceries"]
+    assert demo.addIngredientToGroceries(0, 0)
+    assert not demo._coordinator_data.groceries
+
+
+def test_uncovered_ingredient_addition_persists_and_is_idempotent(
+    tmp_path, monkeypatch
+):
+    from meal_planner_ai.storage.coordinator import load_coordinator
+
+    demo = DemoState(config_path=tmp_path / "config.toml")
+    demo.configure("2026-10-07", 1, 1, 2, False, "")
+    original = demo._groceries
+    # Simulate a missing computed row; retain explicit purchases.
+    monkeypatch.setattr(
+        demo, "_groceries", lambda: [row for row in original() if row.get("requestId")]
+    )
+    assert demo.meals[0]["ingredients"][0]["missingAmount"] == 160
+    assert demo.addIngredientToGroceries(0, 0)
+    assert demo.meals[0]["ingredients"][0]["inGroceries"]
+    assert demo.addIngredientToGroceries(0, 0)
+    data = load_coordinator(tmp_path / "data" / "coordinator.json")
+    assert len(data.groceries) == 1
+    assert data.groceries[0].amount == 160
+    assert not demo.addIngredientToGroceries(-1, 0)
+    assert not demo.addIngredientToGroceries(0, 99)
+
+
+def test_uncovered_ingredient_save_failure_keeps_state(monkeypatch):
+    demo = DemoState()
+    demo.configure("2026-10-07", 1, 1, 2, False, "")
+    monkeypatch.setattr(demo, "_groceries", lambda: [])
+
+    def fail(_data):
+        raise OSError("cannot save")
+
+    monkeypatch.setattr(demo, "_save_coordinator", fail)
+    assert not demo.addIngredientToGroceries(0, 0)
+    assert not demo._coordinator_data.groceries

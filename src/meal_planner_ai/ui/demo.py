@@ -15,6 +15,7 @@ from meal_planner_ai.agents.grocery_list import calculate_groceries
 from meal_planner_ai.models.coordinator import (
     CoordinatorData,
     CoordinatorProposal,
+    Period,
     RequestedMeal,
     ShoppingItem,
 )
@@ -419,6 +420,7 @@ class DemoState(QObject):
                 {
                     "name": self.translate(name),
                     "quantity": quantity_text(amount * servings, unit, self._language),
+                    **self._ingredient_status(name, unit),
                 }
                 for name, amount, unit, _ in recipe["ingredients"]
             ],
@@ -451,6 +453,7 @@ class DemoState(QObject):
             ingredients=[
                 {
                     "name": translate_food(ingredient.name, self._language),
+                    **self._ingredient_status(ingredient.name, ingredient.unit),
                     "quantity": quantity_text(
                         ingredient.amount * servings / recipe.servings,
                         ingredient.unit,
@@ -500,6 +503,72 @@ class DemoState(QObject):
                 )
         return ingredients
 
+    def _ingredient_status(self, name, unit):
+        key = (canonical_food(name).casefold(), unit)
+        requirement = next(
+            item
+            for item in calculate_groceries(self._planned_ingredients(), self._pantry)
+            if (canonical_food(item.name).casefold(), item.unit) == key
+        )
+        purchases = sum(
+            item["amount"]
+            for item in self._groceries()
+            if not item["available"]
+            and (canonical_food(item["foodName"]).casefold(), item["unit"]) == key
+        )
+        missing = max(0, requirement.amount - purchases)
+        return dict(
+            inPantry=requirement.amount == 0,
+            inGroceries=requirement.amount > 0 and missing < 1e-9,
+            missingAmount=missing,
+        )
+
+    @Slot(int, int, result=bool)
+    def addIngredientToGroceries(self, meal_id, ingredient_index):
+        if not 0 <= meal_id < len(self.meals):
+            return False
+        if meal_id < len(self._plan):
+            recipe = self.recipe_catalogue[self._plan[meal_id]]
+            ingredients = [
+                Ingredient(name=n, amount=a, unit=u, category=c)
+                for n, a, u, c in recipe["ingredients"]
+            ]
+            start = date.fromisoformat(self._settings["start"])
+            period = Period(
+                start=start, end=start + timedelta(days=self._settings["days"] - 1)
+            )
+        else:
+            meal = self._generated_meals()[meal_id - len(self._plan)]
+            ingredients = meal.recipe.ingredients
+            period = meal.period
+        if not 0 <= ingredient_index < len(ingredients):
+            return False
+        ingredient = ingredients[ingredient_index]
+        missing = self._ingredient_status(ingredient.name, ingredient.unit)[
+            "missingAmount"
+        ]
+        if missing < 1e-9:
+            return True
+        data = self._coordinator_data.model_copy(deep=True)
+        try:
+            data.groceries.append(
+                ShoppingItem(
+                    name=canonical_food(ingredient.name),
+                    amount=float(missing),
+                    unit=ingredient.unit,
+                    category=ingredient.category,
+                    period=period,
+                )
+            )
+            data = CoordinatorData.model_validate(data.model_dump())
+            self._save_coordinator(data)
+        except (ValueError, OSError):
+            self._notify("Impossible d’enregistrer les demandes. Réessayez.")
+            return False
+        self._coordinator_data = data
+        self.changed.emit()
+        return True
+
     def _groceries(self):
         result = []
         for item in calculate_groceries(self._planned_ingredients(), self._pantry):
@@ -508,6 +577,9 @@ class DemoState(QObject):
                 {
                     "id": key,
                     "name": translate_food(item.name, self._language),
+                    "foodName": item.name,
+                    "unit": item.unit,
+                    "amount": item.amount,
                     "category": item.category,
                     "quantity": quantity_text(
                         item.amount or item.required, item.unit, self._language
@@ -529,6 +601,9 @@ class DemoState(QObject):
                     "id": key,
                     "requestId": item.id,
                     "name": translate_food(item.name, self._language),
+                    "foodName": item.name,
+                    "unit": item.unit,
+                    "amount": item.amount,
                     "category": item.category,
                     "quantity": quantity_text(item.amount, item.unit, self._language),
                     "available": False,

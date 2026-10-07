@@ -33,6 +33,9 @@ editing; requests are only sent when you click **Send request**.
   and appear directly in **Planning**, with the requested period and portions.
   Saving settings does not generate new recipes; use the assistant to request a
   dish. Generated meals can be removed, and their recipes can be opened.
+  Recipe ingredients show compact pantry and grocery coverage checks for the full
+  plan, including guests. Shortfalls are normally added automatically; a small +
+  button saves any uncovered quantity to the grocery list.
 - **Pantry:** add, edit, search, filter, and remove your own foods.
 - **Groceries:** includes explicit purchases even without recipes or planned
   meals. Each added purchase shows its period; check it off, copy it, or remove

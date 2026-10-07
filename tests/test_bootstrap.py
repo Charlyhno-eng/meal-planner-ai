@@ -250,3 +250,41 @@ def test_home_shortcuts_and_live_summaries(qt_app, tmp_path, language, width, he
         window.close()
         engine.deleteLater()
         QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+
+
+def test_recipe_missing_ingredient_button_updates_live(qt_app, monkeypatch):
+    demo = DemoState()
+    demo.configure("2026-10-07", 1, 1, 2, False, "")
+    original = demo._groceries
+    monkeypatch.setattr(
+        demo,
+        "_groceries",
+        lambda: [row for row in original() if row.get("requestId")],
+    )
+    engine = QQmlApplicationEngine()
+    warnings = []
+    engine.warnings.connect(
+        lambda errors: warnings.extend(str(error) for error in errors)
+    )
+    engine.setInitialProperties({"demo": demo})
+    engine.load(Path(app.__file__).parent / "qml" / "Main.qml")
+    assert engine.rootObjects(), warnings
+    window = engine.rootObjects()[0]
+    try:
+        dialog = window.findChild(QObject, "recipeDialog")
+        dialog.setProperty("mealId", 0)
+        QMetaObject.invokeMethod(dialog, "open")
+        QTest.qWait(20)
+        button = visual_child(dialog.property("contentItem"), "add-ingredient-0")
+        assert button is not None
+        assert button.property("visible")
+        assert QMetaObject.invokeMethod(button, "clicked")
+        qt_app.processEvents()
+        button = visual_child(dialog.property("contentItem"), "add-ingredient-0")
+        assert not button.property("visible")
+        assert demo.meals[0]["ingredients"][0]["inGroceries"]
+        assert not warnings, "\n".join(warnings)
+    finally:
+        window.close()
+        engine.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
