@@ -77,7 +77,7 @@ ScrollView {
             Repeater {
                 id: fields
                 model: [
-                    { label: "Mes repas", icon: "planning", name: "planningRequest", description: "Des envies aux recettes", example: "Ex. Je veux faire un tiramisu pour six personnes.", prompt: "Je veux faire un tiramisu pour six personnes.", exampleIndex: 0, context: "" },
+                    { label: "Mes repas", icon: "planning", name: "planningRequest", description: "Des envies aux recettes", example: "Je veux faire un tiramisu pour six personnes.", prompt: "Je veux faire un tiramisu pour six personnes.", exampleIndex: 0, context: "" },
                     { label: "Ma réserve", icon: "pantry", name: "pantryRequest", description: "Ce que vous avez déjà", example: "J’ai 500 g de riz.", prompt: "J’ai 500 g de riz.", exampleIndex: 2, context: "Aliments disponibles en réserve : " },
                     { label: "Mes courses", icon: "groceries", name: "groceryRequest", description: "Pour ne rien oublier", example: "Ajoute trois pommes de terre à acheter la semaine prochaine.", prompt: "Ajoute trois pommes de terre à acheter la semaine prochaine.", exampleIndex: 1, context: "Courses à acheter : " }
                 ]
@@ -157,7 +157,7 @@ ScrollView {
                                         id: request
                                         objectName: card.modelData.name
                                         enabled: !page.assistant.busy && !page.assistant.recording
-                                        Accessible.description: I18n.tr(card.modelData.example)
+                                        Accessible.description: I18n.tr("Exemple : ") + I18n.tr(card.modelData.example)
                                         Accessible.name: I18n.tr(card.modelData.label)
                                         wrapMode: TextEdit.WordWrap
                                         color: Theme.text
@@ -172,8 +172,9 @@ ScrollView {
                                             x: request.leftPadding
                                             y: request.topPadding
                                             width: request.width - request.leftPadding - request.rightPadding
-                                            text: I18n.tr(card.modelData.example)
+                                            text: I18n.tr("Exemple : ") + I18n.tr(card.modelData.example)
                                             font: request.font
+                                            opacity: 0.6
                                             visible: request.text.length === 0
                                         }
                                         onTextChanged: if (!page.clearingRequest) page.assistant.discard()
@@ -250,20 +251,23 @@ ScrollView {
                                             color: !send.enabled ? Theme.surface : send.hovered ? Qt.lighter(card.tint, 1.1) : card.tint
                                             border.color: send.activeFocus ? Theme.text : "transparent"
                                         }
-                                        contentItem: RowLayout {
-                                            spacing: 8
-                                            Text {
-                                                text: send.text
-                                                color: send.enabled ? Theme.accentDark : Theme.muted
-                                                font.pixelSize: 12
-                                                font.weight: Font.DemiBold
-                                                Layout.fillWidth: true
-                                                horizontalAlignment: Text.AlignHCenter
-                                            }
-                                            Text {
-                                                text: "↑"
-                                                color: send.enabled ? Theme.accentDark : Theme.muted
-                                                font.pixelSize: 17
+                                        contentItem: Item {
+                                            RowLayout {
+                                                anchors.centerIn: parent
+                                                spacing: 8
+                                                Text {
+                                                    text: send.text
+                                                    color: send.enabled ? Theme.accentDark : Theme.muted
+                                                    font.pixelSize: 12
+                                                    font.weight: Font.DemiBold
+                                                    verticalAlignment: Text.AlignVCenter
+                                                }
+                                                Text {
+                                                    text: "↑"
+                                                    color: send.enabled ? Theme.accentDark : Theme.muted
+                                                    font.pixelSize: 17
+                                                    verticalAlignment: Text.AlignVCenter
+                                                }
                                             }
                                         }
                                         onClicked: { page.submittedTarget = card.index; page.assistant.plan(I18n.tr(card.modelData.context) + request.text); }

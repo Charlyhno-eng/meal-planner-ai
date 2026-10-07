@@ -16,7 +16,9 @@ and the GLM API key are also persisted.
 The home screen brings meal planning, pantry stock and outstanding groceries
 together in three live summary cards that open their respective pages. Three
 side-by-side request cards provide independent meal, pantry and grocery drafts,
-with microphones and compact send buttons integrated into each editor.
+with microphones and compact send buttons integrated into each editor. Empty
+fields show subdued placeholder text labelled “Example:” to distinguish it from
+your draft.
 Consistent line icons and a sage-and-teal palette give the desktop a shared
 visual identity. Buttons, page changes and dialog openings use brief,
 subtle transitions. The assistant's example buttons fill the request field for
