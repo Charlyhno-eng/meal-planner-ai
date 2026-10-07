@@ -55,11 +55,10 @@ def test_workflow_validates_llm_and_apply_updates_quantities_atomically(qt_app):
     assert demo.meals[1]["servings"] == 5
     rice = next(item for item in demo.pantry if item["name"] == "Riz")
     assert rice["amount"] == 1000
-    quinoa = next(item for item in demo.groceries if item["name"] == "Quinoa")
-    assert quinoa["quantity"] == "240 g"
-    rice = next(item for item in demo.groceries if item["name"] == "Riz")
-    assert rice["quantity"] == "350 g"
-    assert rice["available"] is True
+    assert demo.groceries == []
+    assert demo.meals[0]["ingredients"][0]["missingAmount"] == 240
+    assert demo.addIngredientToGroceries(0, 0)
+    assert demo.groceries[0]["quantity"] == "240 g"
     assert demo._guests == {1: 2}
 
 

@@ -68,7 +68,8 @@ def test_all_recipe_content_is_translated_and_state_survives_language_change(qt_
     demo = DemoState()
     demo.configure("2026-10-07", 7, 7, 2, False, "")
     demo.setGuests(0, 2)
-    demo.toggleGrocery("Quinoa|g")
+    assert demo.addIngredientToGroceries(0, 0)
+    demo.toggleGrocery(demo.groceries[0]["id"])
     before = [(meal["id"], meal["art"], meal["servings"]) for meal in demo.meals]
     purchases = {
         (item["id"], item["available"], item["checked"]) for item in demo.groceries

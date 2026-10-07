@@ -136,16 +136,30 @@ def test_desktop_navigation_and_dialogs(qt_app):
         qt_app.processEvents()
         search.setProperty("text", "")
 
+        avocado_meal = next(
+            meal
+            for meal in demo.meals
+            if any(i["name"] == "Avocat" for i in meal["ingredients"])
+        )
+        ingredient_index = next(
+            i
+            for i, item in enumerate(avocado_meal["ingredients"])
+            if item["name"] == "Avocat"
+        )
+        assert demo.addIngredientToGroceries(avocado_meal["id"], ingredient_index)
+        avocado_id = next(
+            item["id"] for item in demo.groceries if item["name"] == "Avocat"
+        )
         window.setProperty("currentPage", 2)
         qt_app.processEvents()
-        row = visual_child(window.contentItem(), "grocery-Avocat|pièce")
+        row = visual_child(window.contentItem(), "grocery-" + avocado_id)
         position = row.mapToScene(QPoint(130, 30))
         QTest.mouseClick(window, Qt.LeftButton, Qt.NoModifier, position.toPoint())
         assert next(item for item in demo.groceries if item["name"] == "Avocat")[
             "checked"
         ]
         qt_app.processEvents()
-        row = visual_child(window.contentItem(), "grocery-Avocat|pièce")
+        row = visual_child(window.contentItem(), "grocery-" + avocado_id)
         position = row.mapToScene(QPoint(24, 30))
         QTest.mouseClick(window, Qt.LeftButton, Qt.NoModifier, position.toPoint())
         assert not next(item for item in demo.groceries if item["name"] == "Avocat")[
@@ -186,6 +200,7 @@ def test_desktop_navigation_and_dialogs(qt_app):
         # Update all screen bindings, including the open recipe, after mutations.
         demo.replaceMeal(0)
         demo.setGuests(0, 2)
+        assert demo.addIngredientToGroceries(0, 0)
         demo.saveFood(-1, "Quinoa", 300, "g", "Épicerie")
         demo.toggleGrocery("Citron|pièce")
         demo.configure("2026-10-07", 14, 28, 4, True, "champignons")
@@ -274,6 +289,7 @@ def test_home_shortcuts_and_live_summaries(qt_app, tmp_path, language, width, he
         assert not demo.assistant.busy
         assert demo.planning_context() == before
 
+        assert demo.addIngredientToGroceries(0, 0)
         demo.saveFood(-1, "Quinoa", 300, "g", "Épicerie")
         pending = [item for item in demo.groceries if not item["available"]]
         qt_app.processEvents()
@@ -302,15 +318,9 @@ def test_home_shortcuts_and_live_summaries(qt_app, tmp_path, language, width, he
         QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
 
 
-def test_recipe_missing_ingredient_button_updates_live(qt_app, monkeypatch):
+def test_recipe_missing_ingredient_button_updates_live(qt_app):
     demo = DemoState()
     demo.configure("2026-10-07", 1, 1, 2, False, "")
-    original = demo._groceries
-    monkeypatch.setattr(
-        demo,
-        "_groceries",
-        lambda: [row for row in original() if row.get("requestId")],
-    )
     engine = QQmlApplicationEngine()
     warnings = []
     engine.warnings.connect(

@@ -12,15 +12,15 @@ def grocery(demo, name):
 def test_guests_update_recipe_portions_and_purchase_shortfall():
     demo = DemoState()
     assert demo.configure("2026-10-07", 1, 1, 2, False, "")
-    assert grocery(demo, "Courgettes")["available"]
+    assert demo.meals[0]["ingredients"][2]["inPantry"]
     demo.setGuests(0, 2)
     assert demo.meals[0]["servings"] == 4
     assert demo.meals[0]["ingredients"][0]["quantity"] == "320 g"
-    assert grocery(demo, "Courgettes")["quantity"] == "1 pièce"
-    assert not grocery(demo, "Courgettes")["available"]
+    assert demo.meals[0]["ingredients"][2]["missingAmount"] == 1
+    assert demo.groceries == []
     demo.setGuests(0, 0)
     assert demo.guests == []
-    assert grocery(demo, "Courgettes")["available"]
+    assert demo.meals[0]["ingredients"][2]["inPantry"]
 
 
 def test_inventory_add_edit_remove_and_unit_matching():
@@ -28,13 +28,13 @@ def test_inventory_add_edit_remove_and_unit_matching():
     demo.configure("2026-10-07", 1, 1, 2, False, "")
     assert demo.saveFood(-1, "Quinoa", 80, "g", "Épicerie")
     item = demo.pantry[-1]
-    assert grocery(demo, "Quinoa")["quantity"] == "80 g"
+    assert demo.meals[0]["ingredients"][0]["missingAmount"] == 80
     assert demo.saveFood(item["id"], "Quinoa", 200, "ml", "Épicerie")
-    assert grocery(demo, "Quinoa")["quantity"] == "160 g"
+    assert demo.meals[0]["ingredients"][0]["missingAmount"] == 160
     assert demo.saveFood(item["id"], "Quinoa", 200, "g", "Épicerie")
-    assert grocery(demo, "Quinoa")["available"]
+    assert demo.meals[0]["ingredients"][0]["inPantry"]
     demo.removeFood(item["id"])
-    assert grocery(demo, "Quinoa")["quantity"] == "160 g"
+    assert demo.meals[0]["ingredients"][0]["missingAmount"] == 160
     assert not demo.saveFood(-1, "", 0, "g", "Épicerie")
 
 
@@ -87,6 +87,8 @@ def test_invalid_configuration_preserves_existing_state(
 def test_checking_copy_and_replacing_a_meal(qt_app):
     demo = DemoState()
     demo.configure("2026-10-07", 1, 1, 2, False, "")
+    assert demo.groceries == []
+    assert demo.addIngredientToGroceries(0, 0)
     key = grocery(demo, "Quinoa")["id"]
     demo.toggleGrocery(key)
     assert grocery(demo, "Quinoa")["checked"]
@@ -125,26 +127,20 @@ def test_recipe_coverage_tracks_stock_guests_and_units():
     assert not courgettes["inGroceries"]
     demo.setGuests(0, 2)
     assert not demo.meals[0]["ingredients"][2]["inPantry"]
-    assert demo.meals[0]["ingredients"][2]["inGroceries"]
+    assert not demo.meals[0]["ingredients"][2]["inGroceries"]
     assert demo.saveFood(-1, "Quinoa", 1000, "ml", "Épicerie")
     assert not demo.meals[0]["ingredients"][0]["inPantry"]
-    assert demo.meals[0]["ingredients"][0]["inGroceries"]
+    assert not demo.meals[0]["ingredients"][0]["inGroceries"]
     assert demo.addIngredientToGroceries(0, 0)
-    assert not demo._coordinator_data.groceries
+    assert demo.meals[0]["ingredients"][0]["inGroceries"]
 
 
-def test_uncovered_ingredient_addition_persists_and_is_idempotent(
-    tmp_path, monkeypatch
-):
+def test_uncovered_ingredient_addition_persists_and_is_idempotent(tmp_path):
     from meal_planner_ai.storage.coordinator import load_coordinator
 
     demo = DemoState(config_path=tmp_path / "config.toml")
     demo.configure("2026-10-07", 1, 1, 2, False, "")
-    original = demo._groceries
-    # Simulate a missing computed row; retain explicit purchases.
-    monkeypatch.setattr(
-        demo, "_groceries", lambda: [row for row in original() if row.get("requestId")]
-    )
+    assert demo.groceries == []
     assert demo.meals[0]["ingredients"][0]["missingAmount"] == 160
     assert demo.addIngredientToGroceries(0, 0)
     assert demo.meals[0]["ingredients"][0]["inGroceries"]
@@ -159,7 +155,6 @@ def test_uncovered_ingredient_addition_persists_and_is_idempotent(
 def test_uncovered_ingredient_save_failure_keeps_state(monkeypatch):
     demo = DemoState()
     demo.configure("2026-10-07", 1, 1, 2, False, "")
-    monkeypatch.setattr(demo, "_groceries", lambda: [])
 
     def fail(_data):
         raise OSError("cannot save")

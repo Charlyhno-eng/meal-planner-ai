@@ -98,12 +98,10 @@ def test_compound_request_uses_declared_stock_and_shares_it_once(qt_app, fake_re
     assert (item.required, item.available, item.amount) == (200, 150, 50)
     state.apply_execution(result)
     assert len(state.meals) == 2
-    assert (
-        next(item for item in state.groceries if item["name"] == "Mascarpone")[
-            "quantity"
-        ]
-        == "50 g"
-    )
+    assert state.groceries == []
+    assert state.meals[0]["ingredients"][0]["missingAmount"] == 50
+    assert state.addIngredientToGroceries(0, 0)
+    assert state.groceries[0]["quantity"] == "50 g"
 
 
 @pytest.mark.parametrize("excluded", ["mascarpone", "Sucre", "sugar"])
@@ -191,7 +189,12 @@ def test_saved_recipes_restore_and_guests_update_groceries(
     path = tmp_path / "config.toml"
     state = DemoState(config_path=path)
     state.apply_execution(result_for(state, fake_recipes))
+    assert state.groceries == []
+    assert state.addIngredientToGroceries(0, 0)
+    assert state.groceries[0]["amount"] == 100
     state.setGuests(0, 2)
+    assert state.groceries[0]["amount"] == 100
+    assert state.meals[0]["ingredients"][0]["missingAmount"] == 100
     assert state.meals[0]["servings"] == 4
     assert state.guests[0]["title"] == "Tiramisu"
     assert state.meals[0]["ingredients"][0]["quantity"] == "200 g"
@@ -199,7 +202,8 @@ def test_saved_recipes_restore_and_guests_update_groceries(
     assert restored.meals == state.meals
     assert restored.groceries == state.groceries
     assert restored.removeRequest(restored.meals[0]["requestId"])
-    assert restored.meals == restored.groceries == []
+    assert restored.meals == []
+    assert restored.groceries == state.groceries
     assert DemoState(config_path=path).meals == []
 
 

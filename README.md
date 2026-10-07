@@ -41,12 +41,12 @@ over an icon to see its page name.
   Saving settings does not generate new recipes; use the assistant to request a
   dish. Generated meals can be removed, and their recipes can be opened.
   Recipe ingredients show compact pantry and grocery coverage checks for the full
-  plan, including guests. Shortfalls are normally added automatically; a small +
-  button saves any uncovered quantity to the grocery list.
+  plan, including guests. Missing ingredients are not added automatically. Click the small +
+  button to save an uncovered quantity to the grocery list.
 - **Pantry:** add, edit, search, filter, and remove your own foods.
 - **Groceries:** includes explicit purchases even without recipes or planned
   meals. Each added purchase shows its period; check it off, copy it, or remove
-  it. Recipe-based shortfalls remain separate from explicit purchases.
+  it. Ingredients selected from recipes are saved as explicit purchases.
 - **Household:** configure dietary preferences and exclusions. Guests can be
   assigned once planned meals are available.
 - **Settings:** located at the bottom of the sidebar, change the language, save
@@ -191,7 +191,8 @@ Examples:
 
 - **“J’ai envie de faire un tiramisu cette semaine.”** Generates a tiramisu
   recipe for the configured household size, adds it to Planning for the current
-  Monday–Sunday week and calculates the missing ingredients in Groceries.
+  Monday–Sunday week. Open the recipe to review missing ingredients and manually
+  add the ones you want to buy.
 - **“I want to make tiramisu for six people.”** Adds the meal and a recipe for six
   servings using the configured planning period. Explicit serving counts are
   preserved; guests added later scale ingredient quantities.
@@ -206,8 +207,8 @@ calendar week, “next week” to the following calendar week, and an unspecifie
 period uses the configured planning period. Supported units are g, ml and pièce.
 Recipe amounts cover the recipe's total servings; the grocery agent aggregates
 all planned recipes before subtracting stock once. Missing whole-item purchases
-are rounded up. Groceries show the required quantity, stock used and remaining
-purchase quantity. Vegetarian recipes and French/English exclusions are checked
+are rounded up. Recipe coverage reflects stock and explicit purchases; planning a meal never
+adds purchases automatically. Vegetarian recipes and French/English exclusions are checked
 independently of the prompt. Vegetarian checks use the recipe flag and a vocabulary
 of common animal ingredients; they are not a complete food classification system.
 

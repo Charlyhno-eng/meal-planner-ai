@@ -571,29 +571,6 @@ class DemoState(QObject):
 
     def _groceries(self):
         result = []
-        for item in calculate_groceries(self._planned_ingredients(), self._pantry):
-            key = f"{item.name}|{item.unit}"
-            result.append(
-                {
-                    "id": key,
-                    "name": translate_food(item.name, self._language),
-                    "foodName": item.name,
-                    "unit": item.unit,
-                    "amount": item.amount,
-                    "category": item.category,
-                    "quantity": quantity_text(
-                        item.amount or item.required, item.unit, self._language
-                    ),
-                    "available": item.amount == 0,
-                    "requiredQuantity": quantity_text(
-                        item.required, item.unit, self._language
-                    ),
-                    "stockQuantity": quantity_text(
-                        item.available, item.unit, self._language
-                    ),
-                    "checked": key in self._checked,
-                }
-            )
         for item in self._coordinator_data.groceries:
             key = "request:" + item.id
             result.append(
