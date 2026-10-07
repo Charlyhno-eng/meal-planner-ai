@@ -1,12 +1,12 @@
 # Agent implementation guide
 
 The desktop request entry point is `PlanningAssistant.plan()` in
-`src/meal_planner_ai/ui/assistant.py`. It runs the graph in a Qt worker and applies
+`src/ui/assistant.py`. It runs the graph in a Qt worker and applies
 a successful result on the UI thread. Typed and transcribed text use the same path.
 
 ## Source map
 
-All paths below are relative to `src/meal_planner_ai/`.
+All paths below are relative to `src/`.
 
 | Component | Implementation | Responsibility |
 | --- | --- | --- |

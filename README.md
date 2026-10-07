@@ -136,7 +136,7 @@ Launching the UI requires a graphical desktop and Qt platform libraries.
 On Linux, missing system libraries must be installed using your distribution's
 package manager.
 
-You can also launch the application with `uv run python -m meal_planner_ai`.
+You can also launch the application with `uv run python -m src`.
 
 ## Local dictation and AI planning
 
@@ -252,7 +252,7 @@ the agent folders, model contracts, libraries and workflow entry points.
 ## Layout
 
 ```text
-src/meal_planner_ai/
+src/
   agents/       # Separate coordinator, meal_planning, food_preferences, grocery_list folders
   providers/    # Shared GLM HTTP/JSON client
   domain/       # Ingredient identities and French/English food vocabulary

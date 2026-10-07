@@ -10,9 +10,9 @@ from PySide6.QtTest import QTest
 from sample_data import RECIPES
 from test_bootstrap import visual_child
 
-from meal_planner_ai.ui import app
-from meal_planner_ai.ui.demo import DemoState
-from meal_planner_ai.ui.i18n import ENGLISH
+from src.ui import app
+from src.ui.demo import DemoState
+from src.ui.i18n import ENGLISH
 
 
 def test_language_persists_and_restores(tmp_path):
@@ -56,7 +56,7 @@ def test_failed_save_preserves_previous_language_and_config(tmp_path, monkeypatc
     def fail_replace(*args):
         raise PermissionError("Read-only directory")
 
-    monkeypatch.setattr("meal_planner_ai.storage.config.os.replace", fail_replace)
+    monkeypatch.setattr("src.storage.config.os.replace", fail_replace)
     assert not demo.setLanguage("en")
     assert demo.language == "fr"
     assert demo.configError

@@ -5,8 +5,8 @@ from pathlib import Path
 from PySide6.QtCore import QCoreApplication, QEvent, QMetaObject, QObject
 from PySide6.QtQml import QQmlApplicationEngine, QQmlExpression, qmlContext
 
-from meal_planner_ai.ui import app
-from meal_planner_ai.ui.demo import DemoState
+from src.ui import app
+from src.ui.demo import DemoState
 
 
 def test_key_persistence_and_failed_save(tmp_path, monkeypatch):
@@ -21,7 +21,7 @@ def test_key_persistence_and_failed_save(tmp_path, monkeypatch):
         raise PermissionError("read only")
 
     with monkeypatch.context() as patch:
-        patch.setattr("meal_planner_ai.storage.config.os.replace", fail)
+        patch.setattr("src.storage.config.os.replace", fail)
         assert not demo.setGlmApiKey("replacement")
     assert demo.glmApiKey == "test-secret"
     assert demo.glmError

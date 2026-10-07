@@ -17,8 +17,8 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtTest import QTest
 from test_bootstrap import visual_child
 
-from meal_planner_ai.ui import app
-from meal_planner_ai.ui.demo import DemoState
+from src.ui import app
+from src.ui.demo import DemoState
 
 
 @pytest.mark.parametrize("language", ["fr", "en"])

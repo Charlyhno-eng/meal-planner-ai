@@ -2,7 +2,7 @@
 
 import pytest
 
-from meal_planner_ai.ui.demo import DemoState
+from src.ui.demo import DemoState
 
 
 def grocery(demo, name):
@@ -136,7 +136,7 @@ def test_recipe_coverage_tracks_stock_guests_and_units():
 
 
 def test_uncovered_ingredient_addition_persists_and_is_idempotent(tmp_path):
-    from meal_planner_ai.storage.coordinator import load_coordinator
+    from src.storage.coordinator import load_coordinator
 
     demo = DemoState(config_path=tmp_path / "config.toml")
     demo.configure("2026-10-07", 1, 1, 2, False, "")

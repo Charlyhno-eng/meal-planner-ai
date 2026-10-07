@@ -13,13 +13,13 @@ from PySide6.QtTest import QTest
 from sample_data import RECIPES
 from test_bootstrap import visual_child
 
-from meal_planner_ai.models.coordinator import CoordinatorProposal
-from meal_planner_ai.models.planning import PlanningProposal
-from meal_planner_ai.ui import app
-from meal_planner_ai.ui.demo import DemoState
-from meal_planner_ai.ui.i18n import ENGLISH
-from meal_planner_ai.ui.speech import MODEL_FILES, LocalParakeet
-from meal_planner_ai.workflow.planning import ask_local_model, build_planning_workflow
+from src.models.coordinator import CoordinatorProposal
+from src.models.planning import PlanningProposal
+from src.ui import app
+from src.ui.demo import DemoState
+from src.ui.i18n import ENGLISH
+from src.ui.speech import MODEL_FILES, LocalParakeet
+from src.workflow.planning import ask_local_model, build_planning_workflow
 
 
 def proposal(**changes):
@@ -114,7 +114,7 @@ def test_ollama_uses_loopback_structured_output_without_pulling_models(monkeypat
             json.dumps({"message": {"content": proposal().model_dump_json()}})
         )
 
-    monkeypatch.setattr("meal_planner_ai.workflow.planning.urlopen", respond)
+    monkeypatch.setattr("src.workflow.planning.urlopen", respond)
     monkeypatch.setenv("MEAL_PLANNER_OLLAMA_MODEL", "installed-model")
     result = ask_local_model({"request": "two meals", "context": {}})
     assert result["proposal"] == proposal()
@@ -128,7 +128,7 @@ def test_ollama_uses_loopback_structured_output_without_pulling_models(monkeypat
     def unavailable(*args, **kwargs):
         raise URLError("offline")
 
-    monkeypatch.setattr("meal_planner_ai.workflow.planning.urlopen", unavailable)
+    monkeypatch.setattr("src.workflow.planning.urlopen", unavailable)
     with pytest.raises(RuntimeError, match="Ollama indisponible"):
         ask_local_model({"request": "test", "context": {}})
 
@@ -145,7 +145,7 @@ def test_model_download_installs_complete_export_and_cleans_failed_transfer(
 ):
     import io
 
-    from meal_planner_ai.ui.speech import MODEL_URL
+    from src.ui.speech import MODEL_URL
 
     speech = LocalParakeet(tmp_path / "model")
     calls = []
@@ -161,7 +161,7 @@ def test_model_download_installs_complete_export_and_cleans_failed_transfer(
         response.headers = {"Content-Length": "10"}
         yield response
 
-    monkeypatch.setattr("meal_planner_ai.ui.speech.urlopen", respond)
+    monkeypatch.setattr("src.ui.speech.urlopen", respond)
     with pytest.raises(URLError):
         speech.download()
     assert not speech.is_installed()
@@ -180,7 +180,7 @@ def test_model_download_installs_complete_export_and_cleans_failed_transfer(
         response.headers = {"Content-Length": "10"}
         yield response
 
-    monkeypatch.setattr("meal_planner_ai.ui.speech.urlopen", truncated)
+    monkeypatch.setattr("src.ui.speech.urlopen", truncated)
     with pytest.raises(RuntimeError, match="Incomplete"):
         speech.download()
     assert all((speech.path / n).read_bytes() == b"model data" for n in MODEL_FILES)
@@ -247,7 +247,7 @@ def test_home_dictation_and_automatic_application(qt_app, monkeypatch, fake_reci
         assert request.property("text") == "Deux repas pour trois personnes"
 
         monkeypatch.setattr(
-            "meal_planner_ai.providers.glm.urlopen",
+            "src.providers.glm.urlopen",
             lambda *args, **kwargs: (_ for _ in ()).throw(URLError("offline")),
         )
         assistant.plan(request.property("text"))
@@ -257,7 +257,7 @@ def test_home_dictation_and_automatic_application(qt_app, monkeypatch, fake_reci
         assert request.property("text") == "Deux repas pour trois personnes"
 
         monkeypatch.setattr(
-            "meal_planner_ai.workflow.coordinator.interpret_request",
+            "src.workflow.coordinator.interpret_request",
             lambda state, key: {
                 "proposal": CoordinatorProposal(
                     actions=[
@@ -335,7 +335,7 @@ def test_microphone_capture_stop_cancel_and_duration_limit(qt_app, monkeypatch):
     from PySide6.QtCore import QBuffer, QByteArray, QIODevice, Signal
     from PySide6.QtMultimedia import QAudio, QAudioFormat
 
-    import meal_planner_ai.ui.assistant as bridge
+    import src.ui.assistant as bridge
 
     demo = DemoState()
     assistant = demo.assistant
@@ -454,7 +454,7 @@ def test_missing_speech_dependencies_explain_standard_setup(
     for name in MODEL_FILES:
         (tmp_path / name).write_text("placeholder")
     monkeypatch.setattr(
-        "meal_planner_ai.ui.speech.find_spec",
+        "src.ui.speech.find_spec",
         lambda module: None if module == missing else object(),
     )
     with pytest.raises(RuntimeError, match="uv sync --locked") as error:

@@ -25,8 +25,8 @@ def sample_session(monkeypatch):
 
     from sample_data import PANTRY, RECIPES
 
-    from meal_planner_ai.ui.demo import DemoState
-    from meal_planner_ai.ui.i18n import ENGLISH
+    from src.ui.demo import DemoState
+    from src.ui.i18n import ENGLISH
 
     translations = json.loads(
         Path(__file__).with_name("sample_translations.json").read_text("utf-8")
@@ -81,7 +81,5 @@ def fake_recipes(monkeypatch):
             }
         )
 
-    monkeypatch.setattr(
-        "meal_planner_ai.agents.meal_planning.agent.complete_json", respond
-    )
+    monkeypatch.setattr("src.agents.meal_planning.agent.complete_json", respond)
     return respond

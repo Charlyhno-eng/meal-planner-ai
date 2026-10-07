@@ -8,18 +8,18 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtTest import QTest
 from test_bootstrap import visual_child
 
-from meal_planner_ai.agents.food_preferences import (
+from src.agents.food_preferences import (
     PreferenceConflict,
     check_preferences,
 )
-from meal_planner_ai.models.coordinator import (
+from src.models.coordinator import (
     CoordinatorProposal,
     Period,
     RequestedMeal,
 )
-from meal_planner_ai.models.recipes import Ingredient, Recipe
-from meal_planner_ai.ui import app
-from meal_planner_ai.ui.demo import DemoState
+from src.models.recipes import Ingredient, Recipe
+from src.ui import app
+from src.ui.demo import DemoState
 
 PROFILES = [
     {"name": "Alice", "intolerances": "lactose"},
@@ -72,7 +72,7 @@ def test_household_save_failure_preserves_profiles_and_file(
     def fail(*_args):
         raise OSError("read only")
 
-    monkeypatch.setattr("meal_planner_ai.storage.household.os.replace", fail)
+    monkeypatch.setattr("src.storage.household.os.replace", fail)
     assert not state.setHousehold([{"name": "New", "intolerances": ""}], False, "")
     assert state.settings["members"] == PROFILES
     assert path.read_text() == previous
@@ -196,7 +196,7 @@ def test_household_dialog_edits_saves_and_cancels(qt_app, tmp_path, language):
 def test_catalogue_planning_preserves_profiles_and_checks_intolerances(
     qt_app, sample_session, tmp_path
 ):
-    from meal_planner_ai.models.planning import PlanningProposal
+    from src.models.planning import PlanningProposal
 
     state = DemoState(config_path=tmp_path / "config.toml")
     profiles = [{"name": "Alice", "intolerances": "salmon"}]

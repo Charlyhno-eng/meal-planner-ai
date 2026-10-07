@@ -9,12 +9,12 @@ import pytest
 from pydantic import ValidationError
 from PySide6.QtTest import QTest
 
-from meal_planner_ai.agents.food_preferences import PreferenceConflict
-from meal_planner_ai.models.coordinator import CoordinatorProposal, Period
-from meal_planner_ai.providers.glm import CoordinatorUnavailable
-from meal_planner_ai.ui.demo import DemoState
-from meal_planner_ai.workflow.coordinator import resolve_period
-from meal_planner_ai.workflow.meal_request import build_meal_workflow
+from src.agents.food_preferences import PreferenceConflict
+from src.models.coordinator import CoordinatorProposal, Period
+from src.providers.glm import CoordinatorUnavailable
+from src.ui.demo import DemoState
+from src.workflow.coordinator import resolve_period
+from src.workflow.meal_request import build_meal_workflow
 
 
 def meal_action(**changes):
@@ -166,8 +166,8 @@ def test_vegetarian_setting_is_checked_after_generation(qt_app, fake_recipes):
 
 
 def test_piece_shortfalls_round_up_and_units_remain_distinct(qt_app):
-    from meal_planner_ai.agents.grocery_list import calculate_groceries
-    from meal_planner_ai.models.recipes import Ingredient
+    from src.agents.grocery_list import calculate_groceries
+    from src.models.recipes import Ingredient
 
     needs = [
         Ingredient(name="Œufs", amount=2.5, unit="pièce", category="Produits frais")
@@ -217,7 +217,7 @@ def test_failed_save_keeps_recipes_pantry_and_purchases_unchanged(
     def fail(*args):
         raise PermissionError("read only")
 
-    monkeypatch.setattr("meal_planner_ai.storage.coordinator.os.replace", fail)
+    monkeypatch.setattr("src.storage.coordinator.os.replace", fail)
     with pytest.raises(OSError):
         state.apply_execution(result)
     assert state.planning_context() == before
@@ -320,12 +320,10 @@ def test_progress_and_auto_save_use_two_structured_glm_calls(
         )
 
     # Exercise the actual recipe provider, replacing only HTTP transport.
-    from meal_planner_ai.providers.glm import complete_json
+    from src.providers.glm import complete_json
 
-    monkeypatch.setattr(
-        "meal_planner_ai.agents.meal_planning.agent.complete_json", complete_json
-    )
-    monkeypatch.setattr("meal_planner_ai.providers.glm.urlopen", respond)
+    monkeypatch.setattr("src.agents.meal_planning.agent.complete_json", complete_json)
+    monkeypatch.setattr("src.providers.glm.urlopen", respond)
     assistant = state.assistant
     try:
         assistant.plan("J’ai envie de faire un tiramisu cette semaine")
@@ -360,16 +358,14 @@ def test_recipe_provider_failure_after_interpretation_is_visible(qt_app, monkeyp
     state = DemoState()
     state.setGlmApiKey("key")
     monkeypatch.setattr(
-        "meal_planner_ai.workflow.coordinator.interpret_request",
+        "src.workflow.coordinator.interpret_request",
         lambda state, key: {"proposal": {"actions": [meal_action()]}},
     )
 
     def unavailable(*args):
         raise CoordinatorUnavailable("GLM indisponible. Vérifiez votre connexion.")
 
-    monkeypatch.setattr(
-        "meal_planner_ai.agents.meal_planning.agent.complete_json", unavailable
-    )
+    monkeypatch.setattr("src.agents.meal_planning.agent.complete_json", unavailable)
     state.assistant.plan("Tiramisu")
     wait_for_job(state.assistant)
     assert "GLM indisponible" in state.assistant.error
@@ -434,7 +430,7 @@ def test_recipe_servings_control_updates_quantities(qt_app, fake_recipes):
     from PySide6.QtCore import QCoreApplication, QEvent, QMetaObject, QObject
     from PySide6.QtQml import QQmlApplicationEngine
 
-    from meal_planner_ai.ui import app
+    from src.ui import app
 
     state = DemoState()
     state.apply_execution(result_for(state, fake_recipes))

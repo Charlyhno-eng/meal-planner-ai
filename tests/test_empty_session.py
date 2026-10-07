@@ -1,6 +1,6 @@
 """Production session starts without demonstration data or fake agent results."""
 
-from meal_planner_ai.ui.demo import DemoState
+from src.ui.demo import DemoState
 
 
 def test_empty_session_and_manual_inputs(qt_app):
@@ -41,7 +41,7 @@ def test_empty_desktop_screens_and_dialogs(qt_app):
     from PySide6.QtQml import QQmlApplicationEngine
     from PySide6.QtTest import QTest
 
-    from meal_planner_ai.ui import app
+    from src.ui import app
 
     state = DemoState()
     engine = QQmlApplicationEngine()

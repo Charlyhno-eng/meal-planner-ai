@@ -12,16 +12,16 @@ from PySide6.QtCore import QCoreApplication, QEvent, QMetaObject
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtTest import QTest
 
-from meal_planner_ai.agents.coordinator import (
+from src.agents.coordinator import (
     GLM_MODEL,
     GLM_URL,
     CoordinatorUnavailable,
     interpret_request,
 )
-from meal_planner_ai.models.coordinator import CoordinatorProposal, Period
-from meal_planner_ai.ui import app
-from meal_planner_ai.ui.demo import DemoState
-from meal_planner_ai.workflow.coordinator import (
+from src.models.coordinator import CoordinatorProposal, Period
+from src.ui import app
+from src.ui.demo import DemoState
+from src.workflow.coordinator import (
     build_coordinator_workflow,
     resolve_period,
 )
@@ -188,7 +188,7 @@ def test_failed_persistence_keeps_all_services_unchanged(qt_app, tmp_path, monke
     def fail(*args):
         raise PermissionError("read only")
 
-    monkeypatch.setattr("meal_planner_ai.storage.coordinator.os.replace", fail)
+    monkeypatch.setattr("src.storage.coordinator.os.replace", fail)
     with pytest.raises(OSError):
         state.apply_commands(commands)
     assert state.planning_context() == before
@@ -236,7 +236,7 @@ def test_glm_uses_structured_json_and_keeps_credentials_out_of_context(monkeypat
             )
         )
 
-    monkeypatch.setattr("meal_planner_ai.providers.glm.urlopen", respond)
+    monkeypatch.setattr("src.providers.glm.urlopen", respond)
     result = interpret_request({"request": "a tiramisu", "context": {}}, "secret-key")
     assert len(result["proposal"].actions) == 3
     assert len(calls) == 1
@@ -247,7 +247,7 @@ def test_provider_errors_do_not_expose_credentials_or_response_body(monkeypatch,
     def fail(*args, **kwargs):
         raise HTTPError(GLM_URL, code, "secret-key", {}, io.BytesIO(b"secret-key"))
 
-    monkeypatch.setattr("meal_planner_ai.providers.glm.urlopen", fail)
+    monkeypatch.setattr("src.providers.glm.urlopen", fail)
     with pytest.raises(CoordinatorUnavailable) as error:
         interpret_request({"request": "test", "context": {}}, "secret-key")
     assert "secret-key" not in str(error.value)
@@ -271,7 +271,7 @@ def test_invalid_or_truncated_provider_output_is_rejected(monkeypatch, body):
     def respond(*args, **kwargs):
         yield io.StringIO(body)
 
-    monkeypatch.setattr("meal_planner_ai.providers.glm.urlopen", respond)
+    monkeypatch.setattr("src.providers.glm.urlopen", respond)
     with pytest.raises(ValueError):
         interpret_request({"request": "test", "context": {}}, "key")
 
@@ -290,9 +290,7 @@ def test_clarification_follow_up_and_stale_context(qt_app, monkeypatch, fake_rec
         assert s["conversation"][-1]["content"] == "Combien de pommes ?"
         return {"proposal": CoordinatorProposal(actions=[actions()[0]])}
 
-    monkeypatch.setattr(
-        "meal_planner_ai.workflow.coordinator.interpret_request", reason
-    )
+    monkeypatch.setattr("src.workflow.coordinator.interpret_request", reason)
     from threading import Event
 
     ready, release = Event(), Event()
@@ -302,9 +300,7 @@ def test_clarification_follow_up_and_stale_context(qt_app, monkeypatch, fake_rec
         assert release.wait(2)
         return fake_recipes(system, payload, api_key)
 
-    monkeypatch.setattr(
-        "meal_planner_ai.agents.meal_planning.agent.complete_json", blocked_recipe
-    )
+    monkeypatch.setattr("src.agents.meal_planning.agent.complete_json", blocked_recipe)
     assistant = state.assistant
     try:
         assistant.plan("Ajouter des pommes")
@@ -338,7 +334,7 @@ def test_home_voice_text_purchase_and_planned_meal_views(
     engine.load(Path(app.__file__).parent / "qml" / "Main.qml")
     window = engine.rootObjects()[0]
     monkeypatch.setattr(
-        "meal_planner_ai.workflow.coordinator.interpret_request",
+        "src.workflow.coordinator.interpret_request",
         lambda s, key: {"proposal": CoordinatorProposal(actions=actions()[:2])},
     )
     try:
@@ -400,7 +396,7 @@ def test_no_key_no_network_and_malformed_response_no_application(qt_app, monkeyp
         called.append(True)
         raise ValueError("secret-provider-body")
 
-    monkeypatch.setattr("meal_planner_ai.providers.glm.urlopen", unexpected)
+    monkeypatch.setattr("src.providers.glm.urlopen", unexpected)
     assistant = state.assistant
     try:
         assistant.plan("Un tiramisu pour six")
