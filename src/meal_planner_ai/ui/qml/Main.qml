@@ -226,7 +226,6 @@ ApplicationWindow {
                 onPlanningRequested: window.currentPage = 0
                 onPantryRequested: window.currentPage = 1
                 onGroceriesRequested: window.currentPage = 2
-                onConfigureRequested: planningDialog.open()
             }
             AgentInteractionsPage {}
         }

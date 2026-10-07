@@ -461,3 +461,32 @@ def test_missing_speech_dependencies_explain_standard_setup(
     with pytest.raises(RuntimeError, match="uv sync --locked") as error:
         LocalParakeet(tmp_path).check_available()
     assert "--extra" not in str(error.value)
+
+
+def test_home_progress_panel_requires_content(qt_app):
+    demo = DemoState()
+    engine = QQmlApplicationEngine()
+    engine.setInitialProperties({"demo": demo})
+    engine.load(Path(app.__file__).parent / "qml" / "Main.qml")
+    window = engine.rootObjects()[0]
+    try:
+        panel = visual_child(window.contentItem(), "assistantProgressPanel")
+        assert not panel.property("visible")
+        demo.assistant._busy = True
+        demo.assistant.changed.emit()
+        assert not panel.property("visible")
+        demo.assistant._status = "Préparation de votre demande et du contexte du foyer…"
+        demo.assistant.changed.emit()
+        assert panel.property("visible")
+        demo.assistant._busy = False
+        demo.assistant._status = ""
+        demo.assistant._steps = ["Terminé : les changements ont été enregistrés."]
+        demo.assistant.changed.emit()
+        assert panel.property("visible")
+        demo.assistant.discard()
+        assert not panel.property("visible")
+    finally:
+        demo.assistant.shutdown()
+        window.close()
+        engine.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)

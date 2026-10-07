@@ -195,7 +195,9 @@ independently of the prompt. Vegetarian checks use the recipe flag and a vocabul
 of common animal ingredients; they are not a complete food classification system.
 
 There is no second **Apply** step. Successful requests are saved automatically
-and listed in the assistant, with links to Planning and manual settings.
+and listed in the assistant. The progress panel appears only when a status message
+or stage history is available. Use the overview cards or sidebar to open Planning,
+Pantry and Groceries; manual planning settings are available on the Planning page.
 Review the generated recipe and quantities before cooking or shopping.
 
 Meals, recipe ingredients and steps, guest counts and explicit purchases are

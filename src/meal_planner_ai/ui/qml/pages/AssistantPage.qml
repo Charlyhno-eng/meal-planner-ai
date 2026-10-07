@@ -15,7 +15,6 @@ ScrollView {
     signal planningRequested
     signal pantryRequested
     signal groceriesRequested
-    signal configureRequested
     clip: true
     contentWidth: availableWidth
 
@@ -256,7 +255,8 @@ ScrollView {
             }
         }
         Panel {
-            visible: page.assistant.steps.length > 0 || page.assistant.busy
+            objectName: "assistantProgressPanel"
+            visible: page.assistant.status.length > 0 || page.assistant.steps.length > 0
             Layout.fillWidth: true
             implicitHeight: progressContent.implicitHeight + 32
             ColumnLayout {
@@ -265,6 +265,7 @@ ScrollView {
                 anchors.margins: 16
                 spacing: 10
                 RowLayout {
+                    visible: page.assistant.status.length > 0
                     Layout.fillWidth: true
                     BusyIndicator {
                         running: page.assistant.busy
@@ -338,19 +339,7 @@ ScrollView {
                 wrapMode: Text.WordWrap
             }
         }
-        RowLayout {
-            Layout.topMargin: 8
-            ActionButton {
-                text: I18n.tr("Voir mon planning")
-                quiet: true
-                onClicked: page.planningRequested()
-            }
-            ActionButton {
-                text: I18n.tr("Configurer manuellement")
-                quiet: true
-                onClicked: page.configureRequested()
-            }
-        }
+
     }
     Connections {
         target: page.assistant
