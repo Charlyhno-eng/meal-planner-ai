@@ -52,7 +52,11 @@ editing; requests are only sent when you click **Send**.
   stock to meal planning and groceries, recipe requirements sent to groceries,
   and ingredient coverage returned to meals (in stock or to purchase).
   The separate grocery verification agent remains
-  planned. The map describes their roles; live stage history is in the assistant.
+  planned and uses a dashed connection. The map uses separate, rounded paths
+  without crossings. Select an agent to highlight its incoming and outgoing
+  exchanges; moving dots illustrate their direction. Use **Pause** / **Animate**
+  to control this animation, which stops when the page is hidden. The animation
+  illustrates the architecture; live stage history is in the assistant.
 
 Use `Ctrl+1` for the assistant, `Ctrl+2` through `Ctrl+6` for Planning, Pantry,
 Groceries, Household, and Settings, and `Ctrl+7` for AI interactions. Dialogs

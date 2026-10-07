@@ -9,6 +9,7 @@ ScrollView {
     contentWidth: availableWidth
     clip: true
     property int selectedAgent: 0
+    property bool motionEnabled: true
     readonly property color incomingColor: "#a5c8e8"
     readonly property var workflowLinks: [
         {from: "user", to: "coordinator", fromAgent: -1, toAgent: 0, label: I18n.tr("Demande")},
@@ -70,6 +71,15 @@ ScrollView {
                 text: I18n.tr("Circuit des agents")
                 Layout.fillWidth: true
             }
+            ActionButton {
+                objectName: "agentAnimationToggle"
+                text: page.motionEnabled ? I18n.tr("Pause") : I18n.tr("Animer")
+                quiet: true
+                implicitHeight: 30
+                font.pixelSize: 11
+                Accessible.name: page.motionEnabled ? I18n.tr("Mettre les animations en pause") : I18n.tr("Reprendre les animations")
+                onClicked: page.motionEnabled = !page.motionEnabled
+            }
             Rectangle {
                 implicitWidth: architectureLabel.implicitWidth + 24
                 implicitHeight: 30
@@ -78,7 +88,7 @@ ScrollView {
                 Text {
                     id: architectureLabel
                     anchors.centerIn: parent
-                    text: I18n.tr("Agents connectés")
+                    text: I18n.tr("Échanges illustrés")
                     font.pixelSize: 11
                     color: Theme.muted
                 }
@@ -98,54 +108,86 @@ ScrollView {
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
+                anchors.leftMargin: 14
+                anchors.rightMargin: 14
                 height: page.availableHeight < 700 ? 440 : 520
-                readonly property real nodeWidth: Math.min(176, Math.max(124, (width - 90) / 4))
-                // The pantry is a local service alongside the five agents.
+                readonly property real nodeWidth: Math.min(184, (width - 80) / 4)
+                readonly property var routes: page.workflowLinks.map(link => edge(link))
+                // A planar layout: each exchange has its own port and corridor.
                 function center(id) {
-                    const left = nodeWidth / 2 + 8;
-                    const step = (width - 2 * left) / 3;
+                    const top = 64;
                     const middle = height / 2;
-                    if (id === "user") return {x: left, y: middle};
-                    if (id === "coordinator") return {x: left + step, y: middle};
-                    if (id === "planning") return {x: left + 2 * step, y: height * 0.18};
-                    if (id === "preferences") return {x: left + 2 * step, y: middle};
-                    if (id === "pantry") return {x: left + 3 * step, y: height * 0.18};
-                    if (id === "groceries") return {x: left + 2 * step, y: height * 0.82};
-                    return {x: left + 3 * step, y: height * 0.82};
+                    const bottom = height - 64;
+                    if (id === "user") return {x: width * 0.13, y: top};
+                    if (id === "coordinator") return {x: width * 0.45, y: top};
+                    if (id === "preferences") return {x: width * 0.83, y: top};
+                    if (id === "planning") return {x: width * 0.22, y: middle};
+                    if (id === "groceries") return {x: width * 0.68, y: middle};
+                    if (id === "pantry") return {x: width * 0.45, y: bottom};
+                    return {x: width * 0.83, y: bottom};
+                }
+                function rounded(points) {
+                    const result = [points[0]];
+                    for (let i = 1; i < points.length - 1; i++) {
+                        const a = points[i - 1], b = points[i], c = points[i + 1];
+                        const before = Math.hypot(b.x - a.x, b.y - a.y);
+                        const after = Math.hypot(c.x - b.x, c.y - b.y);
+                        const radius = Math.min(10, before / 2, after / 2);
+                        const entry = {x: b.x + (a.x - b.x) * radius / before, y: b.y + (a.y - b.y) * radius / before};
+                        const exit = {x: b.x + (c.x - b.x) * radius / after, y: b.y + (c.y - b.y) * radius / after};
+                        result.push(entry);
+                        for (let j = 1; j <= 8; j++) {
+                            const t = j / 8, u = 1 - t;
+                            result.push({x: u * u * entry.x + 2 * u * t * b.x + t * t * exit.x,
+                                         y: u * u * entry.y + 2 * u * t * b.y + t * t * exit.y});
+                        }
+                    }
+                    result.push(points[points.length - 1]);
+                    return result;
                 }
                 function edge(link) {
-                    const from = center(link.from);
-                    const to = center(link.to);
-                    if ((link.from === "planning" && link.to === "groceries")
-                            || (link.from === "groceries" && link.to === "planning")) {
-                        // Route recipe/coverage exchanges around the preferences card.
-                        const outward = link.from === "planning";
-                        const lane = (center("planning").x + center("pantry").x) / 2
-                                     + (outward ? -8 : 8);
-                        const start = {x: from.x + nodeWidth / 2, y: from.y + (outward ? 30 : -30)};
-                        const end = {x: to.x + nodeWidth / 2, y: to.y + (outward ? -30 : 30)};
-                        return {start: start, end: end,
-                            bends: [{x: lane, y: start.y}, {x: lane, y: end.y}],
-                            label: {x: lane, y: height * (outward ? 0.35 : 0.65)}};
+                    const from = center(link.from), to = center(link.to);
+                    const half = nodeWidth / 2;
+                    let points, label;
+                    if (link.from === "user" || link.to === "preferences") {
+                        points = [{x: from.x + half, y: from.y}, {x: to.x - half, y: to.y}];
+                        label = {x: (points[0].x + points[1].x) / 2, y: from.y};
+                    } else if (link.from === "planning" || (link.from === "groceries" && link.to === "planning")) {
+                        const forward = link.from === "planning";
+                        const y = from.y + (forward ? -14 : 14);
+                        points = [{x: from.x + (forward ? half : -half), y: y},
+                                  {x: to.x + (forward ? -half : half), y: y}];
+                        label = {x: (from.x + to.x) / 2, y: y + (forward ? -17 : 17)};
+                    } else {
+                        const upward = link.from === "pantry";
+                        const direction = upward ? -1 : 1;
+                        const port = link.to === "planning" ? -0.22 : 0.22;
+                        const start = {x: from.x + nodeWidth * port, y: from.y + direction * 54};
+                        const end = {x: to.x, y: to.y - direction * 54};
+                        const lane = (start.y + end.y) / 2;
+                        points = [start, {x: start.x, y: lane}, {x: end.x, y: lane}, end];
+                        label = {x: (start.x + end.x) / 2, y: lane};
                     }
-                    const dx = to.x - from.x;
-                    const dy = to.y - from.y;
-                    // Intersect the node rectangles so arrowheads end at the
-                    // card borders at every supported window width.
-                    const scale = Math.min(
-                        dx === 0 ? Infinity : (nodeWidth / 2) / Math.abs(dx),
-                        dy === 0 ? Infinity : 54 / Math.abs(dy)
-                    );
-                    const middle = {x: (from.x + to.x) / 2, y: (from.y + to.y) / 2};
-                    const label = dy === 0
-                        ? {x: middle.x, y: middle.y - 66}
-                        : {x: link.from === "pantry" ? from.x : to.x, y: middle.y};
-                    return {
-                        start: {x: from.x + dx * scale, y: from.y + dy * scale},
-                        end: {x: to.x - dx * scale, y: to.y - dy * scale},
-                        middle: middle,
-                        label: label
-                    };
+                    return {points: rounded(points), label: label};
+                }
+                function pointAt(points, progress) {
+                    const lengths = [];
+                    let total = 0;
+                    for (let i = 1; i < points.length; i++) {
+                        const length = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+                        lengths.push(length);
+                        total += length;
+                    }
+                    let distance = progress * total;
+                    for (let i = 0; i < lengths.length; i++) {
+                        if (distance <= lengths[i]) {
+                            const t = lengths[i] ? distance / lengths[i] : 0;
+                            return {x: points[i].x + (points[i + 1].x - points[i].x) * t,
+                                    y: points[i].y + (points[i + 1].y - points[i].y) * t};
+                        }
+                        distance -= lengths[i];
+                    }
+                    return points[points.length - 1];
                 }
                 function edgeColor(link) {
                     return link.fromAgent === page.selectedAgent ? Theme.accent
@@ -161,29 +203,74 @@ ScrollView {
                     onPaint: {
                         const ctx = getContext("2d");
                         ctx.reset();
-                        for (const relation of page.workflowLinks) {
-                            const link = graph.edge(relation);
-                            const bends = link.bends || [];
-                            const previous = bends.length ? bends[bends.length - 1] : link.start;
-                            const angle = Math.atan2(link.end.y - previous.y, link.end.x - previous.x);
+                        ctx.lineCap = "round";
+                        ctx.lineJoin = "round";
+                        for (let i = 0; i < page.workflowLinks.length; i++) {
+                            const relation = page.workflowLinks[i];
+                            const points = graph.routes[i].points;
+                            const end = points[points.length - 1];
+                            const previous = points[points.length - 2];
+                            const angle = Math.atan2(end.y - previous.y, end.x - previous.x);
                             ctx.strokeStyle = graph.edgeColor(relation);
                             ctx.fillStyle = graph.edgeColor(relation);
                             ctx.lineWidth = 2;
+                            ctx.setLineDash(relation.to === "verification" ? [4, 5] : []);
                             ctx.beginPath();
-                            ctx.moveTo(link.start.x, link.start.y);
-                            for (const bend of bends) ctx.lineTo(bend.x, bend.y);
-                            ctx.lineTo(link.end.x, link.end.y);
+                            ctx.moveTo(points[0].x, points[0].y);
+                            for (let j = 1; j < points.length; j++) ctx.lineTo(points[j].x, points[j].y);
                             ctx.stroke();
+                            ctx.setLineDash([]);
                             ctx.beginPath();
-                            ctx.moveTo(link.end.x, link.end.y);
-                            ctx.lineTo(link.end.x - 10 * Math.cos(angle - 0.5), link.end.y - 10 * Math.sin(angle - 0.5));
-                            ctx.lineTo(link.end.x - 10 * Math.cos(angle + 0.5), link.end.y - 10 * Math.sin(angle + 0.5));
-                            ctx.closePath(); ctx.fill();
+                            ctx.moveTo(end.x - 7 * Math.cos(angle - 0.5), end.y - 7 * Math.sin(angle - 0.5));
+                            ctx.lineTo(end.x, end.y);
+                            ctx.lineTo(end.x - 7 * Math.cos(angle + 0.5), end.y - 7 * Math.sin(angle + 0.5));
+                            ctx.stroke();
                         }
+                    }
+                    Connections {
+                        target: graph
+                        function onRoutesChanged() { connections.requestPaint(); }
                     }
                     Connections {
                         target: page
                         function onSelectedAgentChanged() { connections.requestPaint(); }
+                    }
+                }
+                Repeater {
+                    model: page.workflowLinks
+                    delegate: Rectangle {
+                        id: pulse
+                        required property var modelData
+                        required property int index
+                        objectName: "agentFlowPulse" + index
+                        property real progress: 0
+                        readonly property var position: graph.pointAt(graph.routes[index].points, progress)
+                        readonly property bool related: modelData.fromAgent === page.selectedAgent || modelData.toAgent === page.selectedAgent
+                        readonly property bool active: page.visible && related && modelData.to !== "verification"
+                        readonly property bool animating: active && page.motionEnabled
+                        x: position.x - width / 2
+                        y: position.y - height / 2
+                        width: 7
+                        height: 7
+                        radius: 4
+                        visible: active
+                        color: graph.edgeColor(modelData)
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 15
+                            height: 15
+                            radius: 8
+                            color: parent.color
+                            opacity: 0.12
+                        }
+                        NumberAnimation on progress {
+                            from: 0
+                            to: 1
+                            duration: 2600 + pulse.index * 130
+                            loops: Animation.Infinite
+                            running: pulse.active
+                            paused: running && !page.motionEnabled
+                        }
                     }
                 }
                 Rectangle {
@@ -236,7 +323,7 @@ ScrollView {
                     delegate: Rectangle {
                         required property var modelData
                         required property int index
-                        readonly property var points: graph.edge(modelData)
+                        readonly property var points: graph.routes[index]
                         objectName: "linkLabel" + modelData.from + "To" + modelData.to
                         x: points.label.x - width / 2
                         y: points.label.y - height / 2
@@ -266,6 +353,7 @@ ScrollView {
                         title: modelData.title
                         kind: modelData.kind
                         step: index + 1
+                        planned: modelData.kind === "verification"
                         tint: modelData.tint
                         selected: page.selectedAgent === index
                         onClicked: page.selectedAgent = index
@@ -283,6 +371,11 @@ ScrollView {
                 Caption { text: I18n.tr("Sortie de l’agent sélectionné"); font.pixelSize: 11 }
             }
         }
+        Caption {
+            text: I18n.tr("Animation illustrative des échanges, sans suivi d’activité en direct.")
+            Layout.fillWidth: true
+            font.pixelSize: 11
+        }
         Panel {
             Layout.fillWidth: true
             implicitHeight: details.implicitHeight + 40
@@ -291,6 +384,19 @@ ScrollView {
                 anchors.fill: parent
                 anchors.margins: 20
                 spacing: 14
+                Connections {
+                    target: page
+                    function onSelectedAgentChanged() { detailReveal.restart(); }
+                }
+                NumberAnimation {
+                    id: detailReveal
+                    target: details
+                    property: "opacity"
+                    from: 0.55
+                    to: 1
+                    duration: 180
+                    easing.type: Easing.OutCubic
+                }
                 RowLayout {
                     spacing: 12
                     AgentIcon { kind: page.selected.kind; ink: page.selected.tint }
@@ -313,7 +419,7 @@ ScrollView {
                     columns: width < 600 ? 1 : 2
                     columnSpacing: 12
                     rowSpacing: 12
-                        Repeater {
+                    Repeater {
                         model: [
                             {label: I18n.tr("Reçoit"), body: page.selected.input, tint: page.incomingColor},
                             {label: I18n.tr("Résultat"), body: page.selected.output, tint: Theme.accent}

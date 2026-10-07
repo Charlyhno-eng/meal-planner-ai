@@ -3,7 +3,16 @@
 from pathlib import Path
 
 import pytest
-from PySide6.QtCore import QCoreApplication, QEvent, QObject, QPoint, Qt
+from PySide6.QtCore import (
+    QCoreApplication,
+    QEvent,
+    QLineF,
+    QMetaObject,
+    QObject,
+    QPoint,
+    QPointF,
+    Qt,
+)
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtTest import QTest
 from test_bootstrap import visual_child
@@ -12,9 +21,13 @@ from meal_planner_ai.ui import app
 from meal_planner_ai.ui.demo import DemoState
 
 
+@pytest.mark.parametrize("language", ["fr", "en"])
 @pytest.mark.parametrize("size", [(960, 700), (1280, 880), (1440, 960)])
-def test_agent_map_selection_keyboard_translation_and_geometry(qt_app, tmp_path, size):
+def test_agent_map_selection_keyboard_translation_and_geometry(
+    qt_app, tmp_path, size, language
+):
     demo = DemoState(config_path=tmp_path / "config.toml")
+    demo.setLanguage(language)
     engine = QQmlApplicationEngine()
     warnings = []
     engine.warnings.connect(
@@ -63,7 +76,7 @@ def test_agent_map_selection_keyboard_translation_and_geometry(qt_app, tmp_path,
             "planning->groceries",
             "groceries->planning",
         ]
-        assert title.property("text") == "Orchestrateur"
+        assert title.property("text") == demo.translate("Orchestrateur")
 
         # The full diagram remains visible at the minimum window size; nodes
         # neither overlap each other nor overflow the graph when resized.
@@ -74,7 +87,9 @@ def test_agent_map_selection_keyboard_translation_and_geometry(qt_app, tmp_path,
             bounds = []
             user_rect = user.mapRectToItem(graph, user.boundingRect())
             assert graph.boundingRect().contains(user_rect)
-            assert user_rect.center().y() == pytest.approx(graph.height() / 2, abs=1)
+            assert user_rect.center().y() == pytest.approx(
+                nodes[0].mapRectToItem(graph, nodes[0].boundingRect()).center().y()
+            )
             assert (
                 user_rect.center().x()
                 < nodes[0].mapRectToItem(graph, nodes[0].boundingRect()).center().x()
@@ -91,6 +106,7 @@ def test_agent_map_selection_keyboard_translation_and_geometry(qt_app, tmp_path,
                 )
                 assert not any(rect.intersects(other) for other in bounds)
                 bounds.append(rect)
+            label_bounds = []
             for label in link_labels:
                 assert label is not None
                 label_rect = label.mapRectToItem(graph, label.boundingRect())
@@ -99,7 +115,38 @@ def test_agent_map_selection_keyboard_translation_and_geometry(qt_app, tmp_path,
                     label_rect.intersects(node_rect) for node_rect in bounds
                 )
                 assert not overlaps_node, f"{label.objectName()} overlaps a node"
+                assert not any(label_rect.intersects(other) for other in label_bounds)
+                label_bounds.append(label_rect)
 
+            # Test the rendered paths, including bends: no exchange crosses
+            # another exchange or passes through a card.
+            routes = graph.property("routes").toVariant()
+            segments = []
+            for route in routes:
+                points = [QPointF(p["x"], p["y"]) for p in route["points"]]
+                lines = [QLineF(a, b) for a, b in zip(points, points[1:])]
+                for line in lines:
+                    for rect in bounds:
+                        interior = rect.adjusted(0.1, 0.1, -0.1, -0.1)
+                        assert not interior.contains(line.p1())
+                        assert not interior.contains(line.p2())
+                        for edge in (
+                            QLineF(interior.topLeft(), interior.topRight()),
+                            QLineF(interior.topRight(), interior.bottomRight()),
+                            QLineF(interior.bottomRight(), interior.bottomLeft()),
+                            QLineF(interior.bottomLeft(), interior.topLeft()),
+                        ):
+                            assert (
+                                line.intersects(edge)[0] != QLineF.BoundedIntersection
+                            )
+                    for other in segments:
+                        assert line.intersects(other)[0] != QLineF.BoundedIntersection
+                segments.extend(lines)
+
+        pulses = [
+            visual_child(window.contentItem(), f"agentFlowPulse{i}") for i in range(9)
+        ]
+        links = page.property("workflowLinks").toVariant()
         for index, node in enumerate(nodes):
             position = node.mapToScene(QPoint(30, 30)).toPoint()
             QTest.mouseClick(window, Qt.LeftButton, Qt.NoModifier, position)
@@ -107,9 +154,41 @@ def test_agent_map_selection_keyboard_translation_and_geometry(qt_app, tmp_path,
             assert page.property("selectedAgent") == index
             assert title.property("text") == node.property("title")
             assert role.property("text")
+            for pulse, link in zip(pulses, links):
+                expected = index in (link["fromAgent"], link["toAgent"])
+                expected = expected and link["to"] != "verification"
+                assert pulse.property("animating") == expected
             assert [n.property("selected") for n in nodes] == [
                 i == index for i in range(6)
             ]
+
+        # Motion advances along actual connections and can be paused. Planned
+        # verification stays static, and hidden pages do not keep animating.
+        pulse = pulses[5]  # pantry -> planning (pantry is selected)
+        before = pulse.property("progress")
+        QTest.qWait(80)
+        assert pulse.property("progress") != before
+        toggle = visual_child(window.contentItem(), "agentAnimationToggle")
+        QMetaObject.invokeMethod(toggle, "clicked")
+        assert not page.property("motionEnabled")
+        assert not any(p.property("animating") for p in pulses)
+        before = pulse.property("progress")
+        QTest.qWait(60)
+        assert pulse.property("progress") == before
+        window.setProperty("currentPage", 5)
+        qt_app.processEvents()
+        window.setProperty("currentPage", 6)
+        qt_app.processEvents()
+        assert not any(p.property("animating") for p in pulses)
+        QMetaObject.invokeMethod(toggle, "clicked")
+        assert pulse.property("animating")
+        window.setProperty("currentPage", 5)
+        qt_app.processEvents()
+        assert not any(p.property("animating") for p in pulses)
+        window.setProperty("currentPage", 6)
+        qt_app.processEvents()
+        assert pulse.property("animating")
+        assert nodes[4].property("planned")
 
         # Switching language updates the selected node and inspector in place.
         assert demo.setLanguage("en")

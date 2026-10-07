@@ -9,6 +9,7 @@ Button {
     required property int step
     property color tint: Theme.accent
     property bool selected: false
+    property bool planned: false
     property real nodeWidth: 176
     width: nodeWidth
     height: 108
@@ -24,7 +25,8 @@ Button {
         color: node.selected ? "#35453d" : node.hovered ? Theme.raised : Theme.surface
         border.color: node.selected || node.activeFocus ? node.tint : Theme.border
         border.width: node.selected || node.activeFocus ? 2 : 1
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: 180 } }
+        Behavior on border.color { ColorAnimation { duration: 180 } }
     }
     contentItem: ColumnLayout {
         spacing: 8
@@ -46,8 +48,8 @@ Button {
             Item { Layout.fillWidth: true }
             Text {
                 visible: node.kind !== "pantry"
-                text: "0" + node.step
-                font.pixelSize: 12
+                text: node.planned ? I18n.tr("À venir") : "0" + node.step
+                font.pixelSize: node.planned ? 10 : 12
                 font.weight: Font.DemiBold
                 color: node.selected ? node.tint : Theme.muted
             }

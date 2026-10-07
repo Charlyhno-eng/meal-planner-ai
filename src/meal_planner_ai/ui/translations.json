@@ -362,5 +362,12 @@
   "Ce que vous avez déjà": "What you already have",
   "Pour ne rien oublier": "Remember every essential",
   "Envoyer": "Send",
-  "Insérer un exemple": "Insert an example"
+  "Insérer un exemple": "Insert an example",
+  "Pause": "Pause",
+  "Animer": "Animate",
+  "Mettre les animations en pause": "Pause animations",
+  "Reprendre les animations": "Resume animations",
+  "À venir": "Planned",
+  "Animation illustrative des échanges, sans suivi d’activité en direct.": "Illustrative exchange animation, without live activity tracking.",
+  "Échanges illustrés": "Illustrated exchanges"
 }
