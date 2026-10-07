@@ -31,7 +31,11 @@ Canvas {
             ctx.arc(x, y, radius, 0, Math.PI * 2);
             ctx.stroke();
         }
-        if (name === "microphone") {
+        if (name === "chevron-left") {
+            path([[15, 6], [9, 12], [15, 18]]);
+        } else if (name === "chevron-right") {
+            path([[9, 6], [15, 12], [9, 18]]);
+        } else if (name === "microphone") {
             ctx.beginPath();
             ctx.arc(12, 6, 3, Math.PI, 0);
             ctx.lineTo(15, 12);

@@ -7,10 +7,13 @@ Button {
     property string iconName: "meal"
     property bool selected: false
     property int count: 0
+    property bool collapsed: false
     implicitHeight: 48
     padding: 12
     hoverEnabled: true
     Accessible.name: text
+    ToolTip.visible: collapsed && hovered
+    ToolTip.text: text
     background: Rectangle {
         radius: 11
         color: control.selected ? Theme.selected : control.hovered ? Theme.surface : "transparent"
@@ -37,7 +40,11 @@ Button {
         }
     }
     contentItem: RowLayout {
-        spacing: 10
+        spacing: control.collapsed ? 0 : 10
+        Item {
+            visible: control.collapsed
+            Layout.fillWidth: true
+        }
         AppIcon {
             name: control.iconName
             color: control.selected ? Theme.accent : Theme.muted
@@ -45,6 +52,7 @@ Button {
             Layout.preferredHeight: 21
         }
         Text {
+            visible: !control.collapsed
             text: control.text
             color: control.selected ? Theme.accent : Theme.muted
             font.pixelSize: 13
@@ -53,7 +61,7 @@ Button {
             elide: Text.ElideRight
         }
         Rectangle {
-            visible: control.count > 0
+            visible: !control.collapsed && control.count > 0
             implicitWidth: Math.max(22, countLabel.implicitWidth + 10)
             implicitHeight: 22
             radius: 7
@@ -65,6 +73,10 @@ Button {
                 color: control.selected ? Theme.accent : Theme.muted
                 font.pixelSize: 10
             }
+        }
+        Item {
+            visible: control.collapsed
+            Layout.fillWidth: true
         }
     }
 }

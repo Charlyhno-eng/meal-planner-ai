@@ -81,7 +81,7 @@ def test_desktop_navigation_and_dialogs(qt_app):
     window = engine.rootObjects()[0]
     window.setWidth(960)
     window.setHeight(700)
-    QTest.qWait(30)
+    QTest.qWait(200)
 
     try:
         assert window.property("currentPage") == 5
@@ -92,12 +92,35 @@ def test_desktop_navigation_and_dialogs(qt_app):
         assert settings_top > agents_bottom
         assert settings_top + settings_nav.height() >= window.height() - 30
         assert visual_child(window.contentItem(), "planningRequest") is not None
+        sidebar = window.findChild(QObject, "sidebar")
+        toggle = visual_child(window.contentItem(), "sidebarToggle")
+        expanded_width = sidebar.property("width")
+        position = toggle.mapToScene(QPoint(16, 16))
+        QTest.mouseClick(window, Qt.LeftButton, Qt.NoModifier, position.toPoint())
+        QTest.qWait(200)
+        assert window.property("sidebarCollapsed")
+        assert sidebar.property("width") == 72
+        assert toggle.property("text") == "Déplier le menu"
         for index in range(7):
             nav = visual_child(window.contentItem(), f"nav{index}")
+            assert nav.property("collapsed")
             position = nav.mapToScene(QPoint(20, 20))
             QTest.mouseClick(window, Qt.LeftButton, Qt.NoModifier, position.toPoint())
             qt_app.processEvents()
             assert window.property("currentPage") == index
+
+        window.setWidth(1280)
+        QTest.qWait(200)
+        assert sidebar.property("width") == 72
+        toggle.forceActiveFocus()
+        QTest.keyClick(window, Qt.Key_Space)
+        QTest.qWait(200)
+        assert not window.property("sidebarCollapsed")
+        assert sidebar.property("width") == 232
+        assert toggle.property("text") == "Replier le menu"
+        window.setWidth(960)
+        QTest.qWait(200)
+        assert sidebar.property("width") == expanded_width
 
         status = window.findChild(QObject, "agentInteractionsStatus")
         assert status.property("text").startswith(

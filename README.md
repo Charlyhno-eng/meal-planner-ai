@@ -21,6 +21,9 @@ Consistent line icons and a sage-and-teal palette give the desktop a shared
 visual identity. Buttons, page changes and dialog openings use brief,
 subtle transitions. The assistant's example buttons fill the request field for
 editing; requests are only sent when you click **Send**.
+Use the arrow at the top of the sidebar to collapse or expand it with a brief
+animation. The collapsed sidebar keeps all navigation icons available; hover
+over an icon to see its page name.
 
 - **AI assistant:** type or dictate a request, then click **Send**. A valid
   request automatically adds named meals with recipes, explicit purchases and

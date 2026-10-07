@@ -10,6 +10,7 @@ ApplicationWindow {
     // Explicit property injection keeps the preview independently testable.
     required property var demo
     property int currentPage: 5
+    property bool sidebarCollapsed: false
     Connections {
         target: window.demo.assistant
         function onModelSetupRequested() { window.currentPage = 4; }
@@ -42,7 +43,15 @@ ApplicationWindow {
 
     Rectangle {
         id: sidebar
-        width: window.width < 1100 ? 208 : 232
+        objectName: "sidebar"
+        width: window.sidebarCollapsed ? 72 : window.width < 1100 ? 208 : 232
+        clip: true
+        Behavior on width {
+            NumberAnimation {
+                duration: Theme.motionDuration
+                easing.type: Easing.OutCubic
+            }
+        }
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         color: Theme.sidebar
@@ -55,11 +64,36 @@ ApplicationWindow {
         }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 18
+            anchors.margins: window.sidebarCollapsed ? 12 : 18
             spacing: 8
+            Item {
+                Layout.fillWidth: true
+                implicitHeight: 32
+                Button {
+                    objectName: "sidebarToggle"
+                    anchors.right: parent.right
+                    width: 32
+                    height: 32
+                    hoverEnabled: true
+                    text: window.sidebarCollapsed ? I18n.tr("Déplier le menu") : I18n.tr("Replier le menu")
+                    Accessible.name: text
+                    ToolTip.visible: hovered
+                    ToolTip.text: text
+                    onClicked: window.sidebarCollapsed = !window.sidebarCollapsed
+                    background: Rectangle {
+                        radius: 8
+                        color: parent.hovered ? Theme.surface : "transparent"
+                        border.color: parent.activeFocus ? Theme.accent : "transparent"
+                    }
+                    contentItem: AppIcon {
+                        name: window.sidebarCollapsed ? "chevron-right" : "chevron-left"
+                        color: Theme.muted
+                    }
+                }
+            }
             RowLayout {
-                Layout.topMargin: 16
-                Layout.bottomMargin: 32
+                Layout.alignment: Qt.AlignHCenter
+                Layout.bottomMargin: 16
                 spacing: 10
                 Rectangle {
                     width: 34
@@ -75,6 +109,7 @@ ApplicationWindow {
                     }
                 }
                 ColumnLayout {
+                    visible: !window.sidebarCollapsed
                     spacing: 3
                     Text {
                         text: "Meal Planner AI"
@@ -90,6 +125,7 @@ ApplicationWindow {
                 }
             }
             Caption {
+                visible: !window.sidebarCollapsed
                 text: I18n.tr("VOTRE QUOTIDIEN")
                 font.pixelSize: 10
                 font.letterSpacing: 1.2
@@ -112,6 +148,7 @@ ApplicationWindow {
                     text: modelData.title
                     iconName: modelData.icon
                     count: modelData.count
+                    collapsed: window.sidebarCollapsed
                     selected: window.currentPage === modelData.page
                     onClicked: window.currentPage = modelData.page
                 }
@@ -131,6 +168,7 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 text: I18n.tr("Interactions IA")
                 iconName: "agents"
+                collapsed: window.sidebarCollapsed
                 selected: window.currentPage === 6
                 onClicked: window.currentPage = 6
             }
@@ -140,6 +178,7 @@ ApplicationWindow {
                 Layout.bottomMargin: 8
                 text: I18n.tr("Paramètres")
                 iconName: "settings"
+                collapsed: window.sidebarCollapsed
                 selected: window.currentPage === 4
                 onClicked: window.currentPage = 4
             }
@@ -169,18 +208,6 @@ ApplicationWindow {
                     text: window.pageTitles[window.currentPage]
                     font.pixelSize: 25
                     Layout.fillWidth: true
-                }
-            }
-            Rectangle {
-                width: 112
-                height: 28
-                radius: 14
-                color: Theme.raised
-                Text {
-                    anchors.centerIn: parent
-                    text: I18n.tr("Session locale")
-                    color: Theme.muted
-                    font.pixelSize: 11
                 }
             }
         }
