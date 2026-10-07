@@ -14,13 +14,15 @@ and the GLM API key are also persisted.
 ## Desktop interface
 
 The home screen brings meal planning, pantry stock and outstanding groceries
-together in three live summary cards that open their respective pages. A kitchen
-illustration, consistent line icons and a sage-and-teal palette give the desktop
-a shared visual identity. Buttons, page changes and dialog openings use brief,
+together in three live summary cards that open their respective pages. Three
+side-by-side request cards provide independent meal, pantry and grocery drafts,
+with microphones and compact send buttons integrated into each editor.
+Consistent line icons and a sage-and-teal palette give the desktop a shared
+visual identity. Buttons, page changes and dialog openings use brief,
 subtle transitions. The assistant's example buttons fill the request field for
-editing; requests are only sent when you click **Send request**.
+editing; requests are only sent when you click **Send**.
 
-- **AI assistant:** type or dictate a request, then click **Send request**. A valid
+- **AI assistant:** type or dictate a request, then click **Send**. A valid
   request automatically adds named meals with recipes, explicit purchases and
   pantry updates. A spinner, elapsed time and stage history show GLM interpretation,
   recipe preparation, preference checks, grocery calculation and saving. The final
@@ -115,7 +117,7 @@ Model weights are **not bundled or downloaded automatically**. Reuse models you
 already have by configuring the paths below. If the speech model is missing or
 incomplete, clicking **Dictate my request** opens **Settings**, where you can
 download Parakeet explicitly. Typed requests remain available. Parakeet performs speech recognition. Both typed and transcribed text go through
-the same coordinator when you click **Send request**.
+the same coordinator when you click **Send**.
 
 ### Parakeet TDT 0.6B v3
 
@@ -147,8 +149,8 @@ MEAL_PLANNER_PARAKEET_DIR=/absolute/path/to/parakeet-v3 uv run meal-planner-ai
 ```
 
 Use the independent meals, pantry and groceries fields to send requests separately.
-Each field has a small microphone button (**Dictate my request**): click it to
-record and click again to **Stop and transcribe**. A field clears after its request
+Each editor has a microphone button at its bottom left (**Dictate my request**):
+click it to record and click again to **Stop and transcribe**. A field clears after its request
 is saved successfully; other drafts and requests needing clarification or retry remain. The app captures
 16 kHz, signed 16-bit mono microphone audio and stops automatically after five minutes.
 Repeat to append another segment. Microphone access must be allowed by the OS and

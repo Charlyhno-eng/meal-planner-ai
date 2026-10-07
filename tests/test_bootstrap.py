@@ -180,7 +180,10 @@ def test_desktop_navigation_and_dialogs(qt_app):
 pytestmark = pytest.mark.usefixtures("sample_session")
 
 
-@pytest.mark.parametrize("language,width,height", [("fr", 960, 700), ("en", 1280, 880)])
+@pytest.mark.parametrize(
+    "language,width,height",
+    [("fr", 960, 700), ("en", 960, 700), ("fr", 1280, 880), ("en", 1280, 880)],
+)
 def test_home_shortcuts_and_live_summaries(qt_app, tmp_path, language, width, height):
     demo = DemoState(config_path=tmp_path / "config.toml")
     demo.setLanguage(language)
@@ -209,11 +212,35 @@ def test_home_shortcuts_and_live_summaries(qt_app, tmp_path, language, width, he
         assert pantry.property("count") == len(demo.pantry)
         assert groceries.property("count") == len(pending)
 
-        # The main action remains on screen even at the minimum window size.
-        send = visual_child(window.contentItem(), "generatePlanButton")
-        bottom = send.mapToScene(QPoint(0, 0)).y() + send.height()
-        assert bottom <= height - 24
-        assert not send.property("enabled")
+        # All three editors sit side by side, with their controls on screen.
+        previous_right = 0
+        field_top = None
+        for name, send_name, mic_name in (
+            ("planningRequest", "generatePlanButton", "dictationButton"),
+            (
+                "pantryRequest",
+                "pantryRequestSendButton",
+                "pantryRequestDictationButton",
+            ),
+            (
+                "groceryRequest",
+                "groceryRequestSendButton",
+                "groceryRequestDictationButton",
+            ),
+        ):
+            field = visual_child(window.contentItem(), name)
+            position = field.mapToScene(QPoint(0, 0))
+            if field_top is None:
+                field_top = position.y()
+            assert position.y() == pytest.approx(field_top)
+            assert position.x() >= previous_right
+            previous_right = position.x() + field.width()
+            for control_name in (send_name, mic_name):
+                control = visual_child(window.contentItem(), control_name)
+                position = control.mapToScene(QPoint(0, 0))
+                assert position.y() + control.height() <= height - 24
+                assert position.x() + control.width() <= width - 26
+            assert not visual_child(window.contentItem(), send_name).property("enabled")
         before = demo.planning_context()
         click(visual_child(window.contentItem(), "requestExample2"))
         request = visual_child(window.contentItem(), "pantryRequest")

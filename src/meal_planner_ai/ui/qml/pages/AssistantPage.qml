@@ -21,58 +21,9 @@ ScrollView {
     ColumnLayout {
         width: page.availableWidth
         spacing: page.compact ? 12 : 18
-        Panel {
-            Layout.fillWidth: true
-            implicitHeight: welcome.implicitHeight + (page.compact ? 32 : 40)
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0; color: Theme.hero }
-                GradientStop { position: 1; color: Theme.surface }
-            }
-            border.color: Theme.borderHover
-            RowLayout {
-                id: welcome
-                anchors.fill: parent
-                anchors.margins: page.compact ? 16 : 20
-                spacing: 20
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: page.compact ? 8 : 10
-                    Caption {
-                        text: I18n.tr("VOTRE CUISINE, CONNECTÉE")
-                        color: Theme.accent
-                        font.pixelSize: 10
-                        font.letterSpacing: 1.5
-                    }
-                    Heading {
-                        text: I18n.tr("Bien manger. Tout simplement.")
-                        font.pixelSize: page.compact ? 24 : page.availableWidth < 800 ? 27 : 32
-                        Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                        elide: Text.ElideNone
-                    }
-                    Caption {
-                        text: I18n.tr("Vos repas, vos réserves et vos courses, réunis au même endroit.")
-                        Layout.fillWidth: true
-                        color: Theme.text
-                        wrapMode: Text.WordWrap
-                    }
-                    Caption {
-                        text: page.store.period + "  ·  " + page.store.settings.people + I18n.tr(" personnes")
-                        color: Theme.accent
-                        font.pixelSize: 12
-                        Layout.fillWidth: true
-                    }
-                }
-                KitchenArt {
-                    Layout.preferredWidth: page.availableWidth < 800 ? 150 : 210
-                    Layout.preferredHeight: page.compact ? 104 : 156
-                }
-            }
-        }
         RowLayout {
             Layout.fillWidth: true
-            spacing: 12
+            spacing: page.availableWidth < 800 ? 12 : 18
             OverviewCard {
                 objectName: "mealOverview"
                 implicitHeight: page.compact ? 80 : 88
@@ -104,155 +55,255 @@ ScrollView {
                 onClicked: page.groceriesRequested()
             }
         }
-        Panel {
+        ColumnLayout {
             Layout.fillWidth: true
-            implicitHeight: composer.implicitHeight + (page.compact ? 32 : 40)
-            ColumnLayout {
-                id: composer
-                anchors.fill: parent
-                anchors.margins: page.compact ? 16 : 20
-                spacing: page.compact ? 10 : 12
-                RowLayout {
+            Layout.topMargin: 6
+            spacing: 6
+            Heading {
+                text: I18n.tr("Que souhaitez-vous organiser ?")
+                font.pixelSize: page.compact ? 24 : 28
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                elide: Text.ElideNone
+            }
+            Caption {
+                text: I18n.tr("Décrivez un repas à préparer, un achat à ajouter ou les aliments disponibles.")
+                Layout.fillWidth: true
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: page.availableWidth < 800 ? 12 : 18
+            Repeater {
+                id: fields
+                model: [
+                    { label: "Mes repas", icon: "planning", name: "planningRequest", description: "Des envies aux recettes", example: "Ex. Je veux faire un tiramisu pour six personnes.", prompt: "Je veux faire un tiramisu pour six personnes.", exampleIndex: 0, context: "" },
+                    { label: "Ma réserve", icon: "pantry", name: "pantryRequest", description: "Ce que vous avez déjà", example: "J’ai 500 g de riz.", prompt: "J’ai 500 g de riz.", exampleIndex: 2, context: "Aliments disponibles en réserve : " },
+                    { label: "Mes courses", icon: "groceries", name: "groceryRequest", description: "Pour ne rien oublier", example: "Ajoute trois pommes de terre à acheter la semaine prochaine.", prompt: "Ajoute trois pommes de terre à acheter la semaine prochaine.", exampleIndex: 1, context: "Courses à acheter : " }
+                ]
+                delegate: Panel {
+                    id: card
+                    required property var modelData
+                    required property int index
+                    property alias field: request
+                    readonly property color tint: index === 0 ? Theme.accent : index === 1 ? Theme.secondary : "#e4c89c"
+                    objectName: modelData.name + "Card"
                     Layout.fillWidth: true
-                    AppIcon {
-                        name: "assistant"
-                        color: Theme.secondary
-                        Layout.preferredWidth: 22
-                        Layout.preferredHeight: 22
+                    Layout.preferredWidth: 1
+                    implicitHeight: page.compact ? 332 : 382
+                    border.color: request.activeFocus ? card.tint : Theme.border
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.topMargin: 1
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: parent.width - 40
+                        height: 2
+                        color: card.tint
+                        opacity: 0.8
                     }
-                    Heading {
-                        text: I18n.tr("Que souhaitez-vous organiser ?")
-                        font.pixelSize: 20
-                        Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                    }
-                }
-                Caption {
-                    text: I18n.tr("Décrivez un repas à préparer, un achat à ajouter ou les aliments disponibles.")
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                }
-                Caption {
-                    text: I18n.tr("Une demande valide ajoute directement vos repas, leurs recettes et les courses nécessaires.")
-                    Layout.fillWidth: true
-                    font.pixelSize: 12
-                    wrapMode: Text.WordWrap
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
-                    enabled: !page.assistant.busy && !page.assistant.recording
-                    Caption { text: I18n.tr("Essayez :"); font.pixelSize: 12 }
-                    Repeater {
-                        model: [
-                            { label: I18n.tr("Un repas"), prompt: I18n.tr("Je veux faire un tiramisu pour six personnes.") },
-                            { label: I18n.tr("Des courses"), prompt: I18n.tr("Ajoute trois pommes de terre à acheter la semaine prochaine.") },
-                            { label: I18n.tr("Ma réserve"), prompt: I18n.tr("J’ai 500 g de riz.") }
-                        ]
-                        ActionButton {
-                            required property var modelData
-                            required property int index
-                            objectName: "requestExample" + index
-                            text: modelData.label
-                            quiet: true
-                            implicitHeight: 32
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: page.availableWidth < 800 ? 14 : 20
+                        spacing: 12
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 10
+                            Rectangle {
+                                implicitWidth: 34
+                                implicitHeight: 34
+                                radius: 11
+                                color: Theme.raised
+                                AppIcon {
+                                    anchors.centerIn: parent
+                                    name: card.modelData.icon
+                                    color: card.tint
+                                    width: 20
+                                    height: 20
+                                }
+                            }
+                            Heading {
+                                text: I18n.tr(card.modelData.label)
+                                Layout.fillWidth: true
+                                font.pixelSize: page.availableWidth < 800 ? 16 : 18
+                            }
+                        }
+                        Caption {
+                            text: I18n.tr(card.modelData.description)
+                            Layout.fillWidth: true
                             font.pixelSize: 12
-                            Accessible.description: modelData.prompt
-                            ToolTip.visible: hovered
-                            ToolTip.text: modelData.prompt
+                        }
+                        Rectangle {
+                            id: editor
+                            objectName: card.modelData.name + "Editor"
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: 12
+                            color: Theme.background
+                            border.color: request.activeFocus ? card.tint : Theme.border
+                            Behavior on border.color {
+                                ColorAnimation { duration: Theme.motionDuration }
+                            }
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                spacing: 0
+                                ScrollView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    contentWidth: availableWidth
+                                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                                    TextArea {
+                                        id: request
+                                        objectName: card.modelData.name
+                                        enabled: !page.assistant.busy && !page.assistant.recording
+                                        Accessible.description: I18n.tr(card.modelData.example)
+                                        Accessible.name: I18n.tr(card.modelData.label)
+                                        wrapMode: TextEdit.WordWrap
+                                        color: Theme.text
+                                        placeholderTextColor: Theme.muted
+                                        font.pixelSize: 13
+                                        selectionColor: Theme.accent
+                                        selectedTextColor: Theme.accentDark
+                                        selectByMouse: true
+                                        padding: 10
+                                        background: Item {}
+                                        Caption {
+                                            x: request.leftPadding
+                                            y: request.topPadding
+                                            width: request.width - request.leftPadding - request.rightPadding
+                                            text: I18n.tr(card.modelData.example)
+                                            font: request.font
+                                            visible: request.text.length === 0
+                                        }
+                                        onTextChanged: if (!page.clearingRequest) page.assistant.discard()
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    ActionButton {
+                                        id: microphone
+                                        objectName: card.index === 0 ? "dictationButton" : card.modelData.name + "DictationButton"
+                                        readonly property bool recordingHere: page.assistant.recording && page.dictationTarget === card.index
+                                        text: recordingHere ? I18n.tr("Arrêter et transcrire") : I18n.tr("Dicter ma demande")
+                                        Accessible.description: I18n.tr(card.modelData.label)
+                                        quiet: true
+                                        implicitWidth: 40
+                                        implicitHeight: 36
+                                        padding: 8
+                                        ToolTip.visible: hovered || activeFocus
+                                        ToolTip.text: text
+                                        contentItem: Item {
+                                            AppIcon {
+                                                anchors.centerIn: parent
+                                                width: 20
+                                                height: 20
+                                                name: "microphone"
+                                                visible: !microphone.recordingHere
+                                                color: microphone.enabled ? card.tint : Theme.border
+                                            }
+                                            Rectangle {
+                                                anchors.centerIn: parent
+                                                width: 12
+                                                height: 12
+                                                radius: 3
+                                                visible: microphone.recordingHere
+                                                color: Theme.danger
+                                            }
+                                        }
+                                        background: Rectangle {
+                                            radius: 18
+                                            color: microphone.recordingHere || microphone.hovered ? Theme.raised : "transparent"
+                                            border.color: microphone.activeFocus ? card.tint : "transparent"
+                                        }
+                                        enabled: !page.assistant.busy && (!page.assistant.recording || page.dictationTarget === card.index)
+                                        onClicked: {
+                                            if (page.assistant.recording) page.assistant.stopDictation();
+                                            else { page.dictationTarget = card.index; page.assistant.startDictation(); }
+                                        }
+                                    }
+                                    ActionButton {
+                                        visible: microphone.recordingHere
+                                        text: I18n.tr("Annuler")
+                                        quiet: true
+                                        implicitWidth: contentItem.implicitWidth + 8
+                                        implicitHeight: 36
+                                        padding: 4
+                                        font.pixelSize: 11
+                                        onClicked: page.assistant.cancelDictation()
+                                    }
+                                    Item { Layout.fillWidth: true }
+                                    ActionButton {
+                                        id: send
+                                        visible: !microphone.recordingHere
+                                        objectName: card.index === 0 ? "generatePlanButton" : card.modelData.name + "SendButton"
+                                        text: I18n.tr("Envoyer")
+                                        Accessible.name: I18n.tr("Envoyer la demande") + " — " + I18n.tr(card.modelData.label)
+                                        primary: true
+                                        implicitHeight: 36
+                                        implicitWidth: 100
+                                        padding: 10
+                                        enabled: request.text.trim().length > 0 && !page.assistant.busy && !page.assistant.recording
+                                        background: Rectangle {
+                                            radius: 18
+                                            color: !send.enabled ? Theme.surface : send.hovered ? Qt.lighter(card.tint, 1.1) : card.tint
+                                            border.color: send.activeFocus ? Theme.text : "transparent"
+                                        }
+                                        contentItem: RowLayout {
+                                            spacing: 8
+                                            Text {
+                                                text: send.text
+                                                color: send.enabled ? Theme.accentDark : Theme.muted
+                                                font.pixelSize: 12
+                                                font.weight: Font.DemiBold
+                                                Layout.fillWidth: true
+                                                horizontalAlignment: Text.AlignHCenter
+                                            }
+                                            Text {
+                                                text: "↑"
+                                                color: send.enabled ? Theme.accentDark : Theme.muted
+                                                font.pixelSize: 17
+                                            }
+                                        }
+                                        onClicked: { page.submittedTarget = card.index; page.assistant.plan(I18n.tr(card.modelData.context) + request.text); }
+                                    }
+                                }
+                            }
+                        }
+                        ActionButton {
+                            id: example
+                            objectName: "requestExample" + card.modelData.exampleIndex
+                            text: I18n.tr("Insérer un exemple")
+                            quiet: true
+                            implicitHeight: 28
+                            font.pixelSize: 11
+                            padding: 4
+                            Accessible.description: I18n.tr(card.modelData.prompt)
+                            ToolTip.visible: hovered || activeFocus
+                            ToolTip.text: I18n.tr(card.modelData.prompt)
+                            contentItem: Text {
+                                text: example.text + "  ↗"
+                                color: card.tint
+                                font: example.font
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            enabled: !page.assistant.busy && !page.assistant.recording
                             onClicked: {
-                                const field = fields.itemAt(index === 0 ? 0 : index === 1 ? 2 : 1).field;
-                                field.text = modelData.prompt;
-                                field.forceActiveFocus();
-                                field.cursorPosition = field.length;
+                                request.text = I18n.tr(card.modelData.prompt);
+                                request.forceActiveFocus();
+                                request.cursorPosition = request.length;
                             }
                         }
                     }
-                    Item { Layout.fillWidth: true }
-                }
-                Repeater {
-                    id: fields
-                    model: [
-                        { label: "Mes repas", name: "planningRequest", example: "Ex. Je veux faire un tiramisu pour six personnes.", context: "" },
-                        { label: "Ma réserve", name: "pantryRequest", example: "J’ai 500 g de riz.", context: "Aliments disponibles en réserve : " },
-                        { label: "Mes courses", name: "groceryRequest", example: "Ajoute trois pommes de terre à acheter la semaine prochaine.", context: "Courses à acheter : " }
-                    ]
-                    delegate: ColumnLayout {
-                        required property var modelData
-                        required property int index
-                        property alias field: request
-                        Layout.fillWidth: true
-                        Caption { text: I18n.tr(modelData.label) }
-                TextArea {
-                    id: request
-                    objectName: modelData.name
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: page.compact ? 64 : 80
-                    enabled: !page.assistant.busy && !page.assistant.recording
-                    placeholderText: I18n.tr(modelData.example)
-                    Accessible.name: I18n.tr(modelData.label)
-                    wrapMode: TextEdit.WordWrap
-                    color: Theme.text
-                    placeholderTextColor: Theme.muted
-                    selectionColor: Theme.accent
-                    selectedTextColor: Theme.accentDark
-                    selectByMouse: true
-                    padding: 16
-                    background: Rectangle {
-                        color: Theme.background
-                        radius: 12
-                        border.color: request.activeFocus ? Theme.accent : Theme.border
-                        border.width: request.activeFocus ? 2 : 1
-                        Behavior on border.color {
-                            ColorAnimation { duration: Theme.motionDuration }
-                        }
-                    }
-                    onTextChanged: if (!page.clearingRequest) page.assistant.discard()
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 12
-                    ActionButton {
-                        objectName: index === 0 ? "dictationButton" : modelData.name + "DictationButton"
-                        text: page.assistant.recording ? I18n.tr("Arrêter et transcrire") : I18n.tr("Dicter ma demande")
-                        quiet: true
-                        implicitWidth: 34
-                        implicitHeight: 34
-                        padding: 6
-                        ToolTip.visible: hovered
-                        ToolTip.text: text
-                        contentItem: AppIcon { name: "microphone"; color: page.assistant.recording ? Theme.danger : Theme.muted }
-                        enabled: !page.assistant.busy && (!page.assistant.recording || page.dictationTarget === index)
-                        onClicked: {
-                            if (page.assistant.recording) page.assistant.stopDictation();
-                            else { page.dictationTarget = index; page.assistant.startDictation(); }
-                        }
-                    }
-                    ActionButton {
-                        visible: page.assistant.recording && page.dictationTarget === index
-                        text: I18n.tr("Annuler")
-                        quiet: true
-                        onClicked: page.assistant.cancelDictation()
-                    }
-                    Item { Layout.fillWidth: true }
-                    ActionButton {
-                        objectName: index === 0 ? "generatePlanButton" : modelData.name + "SendButton"
-                        text: I18n.tr("Envoyer la demande")
-                        primary: true
-                        enabled: request.text.trim().length > 0 && !page.assistant.busy && !page.assistant.recording
-                        onClicked: { page.submittedTarget = index; page.assistant.plan(I18n.tr(modelData.context) + request.text); }
-                    }
-                }
-                    }
-                }
-                Caption {
-                    text: page.assistant.recording ? I18n.tr("Enregistrement en cours — 5 minutes maximum.") : page.assistant.busy ? page.assistant.status : I18n.tr("Dictée locale avec Parakeet. Le texte et le contexte sont envoyés à GLM pour interprétation.")
-                    Layout.fillWidth: true
-                    font.pixelSize: 11
-                    wrapMode: Text.WordWrap
-                    Accessible.role: Accessible.StaticText
                 }
             }
+        }
+        Caption {
+            text: page.assistant.recording ? I18n.tr("Enregistrement en cours — 5 minutes maximum.") : page.assistant.busy ? page.assistant.status : I18n.tr("Dictée locale avec Parakeet. Le texte et le contexte sont envoyés à GLM pour interprétation.")
+            Layout.fillWidth: true
+            font.pixelSize: 11
+            Accessible.role: Accessible.StaticText
         }
         Panel {
             objectName: "assistantProgressPanel"
