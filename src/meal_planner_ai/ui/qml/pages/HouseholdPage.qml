@@ -1,0 +1,176 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import "../components"
+
+ScrollView {
+    id: page
+    required property var store
+    signal preferencesRequested
+    signal guestRequested
+    clip: true
+    contentWidth: availableWidth
+    ColumnLayout {
+        width: page.availableWidth
+        spacing: 24
+        ColumnLayout {
+            spacing: 6
+            Heading {
+                text: I18n.tr("Chacun a sa place à table")
+            }
+            Caption {
+                text: I18n.tr("Votre foyer, vos goûts, vos invités.")
+            }
+        }
+        Panel {
+            Layout.fillWidth: true
+            implicitHeight: family.implicitHeight + 40
+            ColumnLayout {
+                id: family
+                anchors.fill: parent
+                anchors.margins: 20
+                spacing: 20
+                RowLayout {
+                    Layout.fillWidth: true
+                    Rectangle {
+                        width: 48
+                        height: 48
+                        radius: 16
+                        color: "#3e4e43"
+                        Text {
+                            anchors.centerIn: parent
+                            text: page.store.settings.people
+                            color: Theme.accent
+                            font.pixelSize: 22
+                            font.weight: Font.DemiBold
+                        }
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Heading {
+                            text: I18n.tr("Votre foyer")
+                            font.pixelSize: 18
+                            Layout.fillWidth: true
+                        }
+                        Caption {
+                            text: page.store.settings.people + I18n.tr(" personnes au quotidien")
+                        }
+                    }
+                    ActionButton {
+                        text: I18n.tr("Modifier")
+                        onClicked: page.preferencesRequested()
+                    }
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 1
+                    color: Theme.border
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Caption {
+                            Layout.fillWidth: true
+                            text: I18n.tr("ALIMENTATION")
+                            font.pixelSize: 11
+                            font.letterSpacing: 1
+                        }
+                        Text {
+                            text: page.store.settings.vegetarian ? I18n.tr("Végétarienne") : I18n.tr(
+                                                                       "Variée")
+                            color: Theme.text
+                            font.pixelSize: 15
+                        }
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Caption {
+                            text: I18n.tr("ALIMENTS EXCLUS")
+                            font.pixelSize: 11
+                            font.letterSpacing: 1
+                        }
+                        Text {
+                            text: page.store.settings.dislikes || I18n.tr("Aucun")
+                            color: Theme.text
+                            font.pixelSize: 15
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+                }
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            Heading {
+                text: I18n.tr("Les invités")
+                Layout.fillWidth: true
+                font.pixelSize: 20
+            }
+            ActionButton {
+                text: I18n.tr("+  Inviter à un repas")
+                onClicked: page.guestRequested()
+            }
+        }
+        Panel {
+            visible: page.store.guests.length === 0
+            Layout.fillWidth: true
+            implicitHeight: 138
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: 12
+                Heading {
+                    text: I18n.tr("Une place en plus ?")
+                    font.pixelSize: 18
+                    Layout.alignment: Qt.AlignHCenter
+                }
+                Caption {
+                    text: I18n.tr("Les portions et les courses s’adaptent à vos invités.")
+                    Layout.alignment: Qt.AlignHCenter
+                }
+                ActionButton {
+                    text: I18n.tr("Ajouter des invités")
+                    quiet: true
+                    Layout.alignment: Qt.AlignHCenter
+                    onClicked: page.guestRequested()
+                }
+            }
+        }
+        Repeater {
+            model: page.store.guests
+            delegate: Panel {
+                id: guestRow
+                required property var modelData
+                Layout.fillWidth: true
+                implicitHeight: 86
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 18
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        Text {
+                            text: guestRow.modelData.label + " · " + guestRow.modelData.title
+                            color: Theme.text
+                            font.pixelSize: 15
+                            font.weight: Font.DemiBold
+                        }
+                        Caption {
+                            text: guestRow.modelData.guests + I18n.tr(" invité(s) · ")
+                                  + guestRow.modelData.servings + I18n.tr(" portions au total")
+                        }
+                    }
+                    ActionButton {
+                        text: I18n.tr("Retirer")
+                        quiet: true
+                        destructive: true
+                        onClicked: page.store.setGuests(guestRow.modelData.id, 0)
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,175 @@
+"""Sample data used only by automated checks."""
+
+RECIPES = [
+    {
+        "title": "Bowl aux légumes rôtis",
+        "subtitle": "Pois chiches, quinoa & citron",
+        "minutes": 30,
+        "color": "#cdb781",
+        "vegetarian": True,
+        "ingredients": [
+            ("Quinoa", 80, "g", "Épicerie"),
+            ("Pois chiches", 120, "g", "Épicerie"),
+            ("Courgettes", 1, "pièce", "Fruits & légumes"),
+            ("Citron", 0.5, "pièce", "Fruits & légumes"),
+        ],
+        "steps": [
+            "Couper les courgettes et les rôtir 20 min à 200 °C.",
+            "Cuire le quinoa et réchauffer les pois chiches.",
+            "Assembler le bowl et arroser de jus de citron.",
+        ],
+    },
+    {
+        "title": "Pâtes au pesto",
+        "subtitle": "Tomates cerises & parmesan",
+        "minutes": 20,
+        "color": "#8faa87",
+        "vegetarian": True,
+        "ingredients": [
+            ("Pâtes", 100, "g", "Épicerie"),
+            ("Tomates cerises", 150, "g", "Fruits & légumes"),
+            ("Pesto", 30, "g", "Épicerie"),
+            ("Parmesan végétarien", 20, "g", "Produits frais"),
+        ],
+        "steps": [
+            "Cuire les pâtes dans une grande casserole d’eau.",
+            "Faire revenir les tomates cerises à la poêle.",
+            "Mélanger avec le pesto et ajouter le parmesan.",
+        ],
+    },
+    {
+        "title": "Curry de lentilles",
+        "subtitle": "Lait de coco & riz basmati",
+        "minutes": 35,
+        "color": "#d5a26e",
+        "vegetarian": True,
+        "ingredients": [
+            ("Lentilles corail", 80, "g", "Épicerie"),
+            ("Lait de coco", 100, "ml", "Épicerie"),
+            ("Riz", 70, "g", "Épicerie"),
+            ("Curry", 5, "g", "Épicerie"),
+        ],
+        "steps": [
+            "Rincer les lentilles et les mettre dans une casserole.",
+            "Ajouter le lait de coco, le curry et un peu d’eau. Mijoter 20 min.",
+            "Cuire le riz et servir avec les lentilles.",
+        ],
+    },
+    {
+        "title": "Tartines de saison",
+        "subtitle": "Avocat, œuf & jeunes pousses",
+        "minutes": 15,
+        "color": "#a1b991",
+        "vegetarian": True,
+        "ingredients": [
+            ("Pain", 100, "g", "Épicerie"),
+            ("Avocat", 1, "pièce", "Fruits & légumes"),
+            ("Œufs", 1, "pièce", "Produits frais"),
+            ("Salade", 40, "g", "Fruits & légumes"),
+        ],
+        "steps": [
+            "Cuire les œufs 6 min dans l’eau bouillante.",
+            "Griller le pain et écraser l’avocat dessus.",
+            "Ajouter les œufs et servir avec la salade.",
+        ],
+    },
+    {
+        "title": "Saumon au citron",
+        "subtitle": "Pommes de terre & courgettes",
+        "minutes": 35,
+        "color": "#cb9c89",
+        "vegetarian": False,
+        "ingredients": [
+            ("Saumon", 150, "g", "Produits frais"),
+            ("Pommes de terre", 250, "g", "Fruits & légumes"),
+            ("Courgettes", 1, "pièce", "Fruits & légumes"),
+            ("Citron", 0.5, "pièce", "Fruits & légumes"),
+        ],
+        "steps": [
+            "Couper les pommes de terre et les enfourner 20 min à 200 °C.",
+            "Ajouter le saumon et les courgettes pour 15 min.",
+            "Arroser de citron avant de servir.",
+        ],
+    },
+    {
+        "title": "Risotto aux champignons",
+        "subtitle": "Crémeux, tout simplement",
+        "minutes": 40,
+        "color": "#b8a68a",
+        "vegetarian": True,
+        "ingredients": [
+            ("Riz", 90, "g", "Épicerie"),
+            ("Champignons", 150, "g", "Fruits & légumes"),
+            ("Bouillon de légumes", 300, "ml", "Épicerie"),
+            ("Parmesan végétarien", 25, "g", "Produits frais"),
+        ],
+        "steps": [
+            "Faire revenir les champignons puis ajouter le riz.",
+            "Verser le bouillon chaud petit à petit en remuant pendant 25 min.",
+            "Incorporer le parmesan et servir.",
+        ],
+    },
+    {
+        "title": "Salade méditerranéenne",
+        "subtitle": "Feta, concombre & pois chiches",
+        "minutes": 15,
+        "color": "#a6bca9",
+        "vegetarian": True,
+        "ingredients": [
+            ("Concombre", 0.5, "pièce", "Fruits & légumes"),
+            ("Feta végétarienne", 60, "g", "Produits frais"),
+            ("Pois chiches", 100, "g", "Épicerie"),
+            ("Tomates cerises", 120, "g", "Fruits & légumes"),
+        ],
+        "steps": [
+            "Rincer les pois chiches et couper les légumes.",
+            "Émietter la feta sur les légumes.",
+            "Mélanger et servir bien frais.",
+        ],
+    },
+]
+
+PANTRY = [
+    {
+        "id": 1,
+        "name": "Riz",
+        "amount": 500.0,
+        "unit": "g",
+        "category": "Épicerie",
+    },
+    {
+        "id": 2,
+        "name": "Pâtes",
+        "amount": 500.0,
+        "unit": "g",
+        "category": "Épicerie",
+    },
+    {
+        "id": 3,
+        "name": "Courgettes",
+        "amount": 3.0,
+        "unit": "pièce",
+        "category": "Fruits & légumes",
+    },
+    {
+        "id": 4,
+        "name": "Œufs",
+        "amount": 6.0,
+        "unit": "pièce",
+        "category": "Produits frais",
+    },
+    {
+        "id": 5,
+        "name": "Pois chiches",
+        "amount": 400.0,
+        "unit": "g",
+        "category": "Épicerie",
+    },
+    {
+        "id": 6,
+        "name": "Pesto",
+        "amount": 90.0,
+        "unit": "g",
+        "category": "Épicerie",
+    },
+]
