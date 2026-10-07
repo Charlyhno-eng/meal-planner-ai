@@ -17,8 +17,8 @@ ScrollView {
         Panel {
             Layout.fillWidth: true
             implicitHeight: hero.implicitHeight + 40
-            color: "#30413b"
-            border.color: "#485c4e"
+            color: Theme.hero
+            border.color: Theme.borderHover
             RowLayout {
                 id: hero
                 anchors.fill: parent
@@ -131,7 +131,7 @@ ScrollView {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 260
                     implicitHeight: modelData.requestId ? 354 : 278
-                    border.color: cardHover.hovered ? "#738775" : Theme.border
+                    border.color: cardHover.hovered ? Theme.borderHover : Theme.border
                     HoverHandler {
                         id: cardHover
                     }

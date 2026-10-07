@@ -178,3 +178,74 @@ def test_desktop_navigation_and_dialogs(qt_app):
 
 
 pytestmark = pytest.mark.usefixtures("sample_session")
+
+
+@pytest.mark.parametrize("language,width,height", [("fr", 960, 700), ("en", 1280, 880)])
+def test_home_shortcuts_and_live_summaries(qt_app, tmp_path, language, width, height):
+    demo = DemoState(config_path=tmp_path / "config.toml")
+    demo.setLanguage(language)
+    engine = QQmlApplicationEngine()
+    warnings = []
+    engine.warnings.connect(lambda errors: warnings.extend(str(e) for e in errors))
+    engine.setInitialProperties({"demo": demo})
+    engine.load(Path(app.__file__).parent / "qml" / "Main.qml")
+    assert len(engine.rootObjects()) == 1, warnings
+    window = engine.rootObjects()[0]
+    window.setWidth(width)
+    window.setHeight(height)
+    QTest.qWait(200)
+
+    def click(item):
+        position = item.mapToScene(QPoint(10, 10))
+        QTest.mouseClick(window, Qt.LeftButton, Qt.NoModifier, position.toPoint())
+        qt_app.processEvents()
+
+    try:
+        meals = visual_child(window.contentItem(), "mealOverview")
+        pantry = visual_child(window.contentItem(), "pantryOverview")
+        groceries = visual_child(window.contentItem(), "groceryOverview")
+        pending = [item for item in demo.groceries if not item["available"]]
+        assert meals.property("count") == len(demo.meals)
+        assert pantry.property("count") == len(demo.pantry)
+        assert groceries.property("count") == len(pending)
+
+        # The main action remains on screen even at the minimum window size.
+        send = visual_child(window.contentItem(), "generatePlanButton")
+        bottom = send.mapToScene(QPoint(0, 0)).y() + send.height()
+        assert bottom <= height - 24
+        assert not send.property("enabled")
+        before = demo.planning_context()
+        click(visual_child(window.contentItem(), "requestExample2"))
+        request = window.findChild(QObject, "planningRequest")
+        assert request.property("text") == demo.translate("J’ai 500 g de riz.")
+        assert request.property("activeFocus")
+        assert send.property("enabled")
+        assert not demo.assistant.busy
+        assert demo.planning_context() == before
+
+        demo.saveFood(-1, "Quinoa", 300, "g", "Épicerie")
+        pending = [item for item in demo.groceries if not item["available"]]
+        qt_app.processEvents()
+        assert groceries.property("count") == len(pending)
+        demo.toggleGrocery(pending[0]["id"])
+        qt_app.processEvents()
+        assert pantry.property("count") == len(demo.pantry)
+        assert groceries.property("count") == len(pending) - 1
+        assert visual_child(window.contentItem(), "nav2").property("count") == (
+            len(pending) - 1
+        )
+
+        for card, index in ((meals, 0), (pantry, 1), (groceries, 2)):
+            click(card)
+            assert window.property("currentPage") == index
+            assert visual_child(window.contentItem(), f"nav{index}").property(
+                "selected"
+            )
+            QTest.keyClick(window, Qt.Key_1, Qt.ControlModifier)
+            QTest.qWait(200)
+        assert request.property("text") == demo.translate("J’ai 500 g de riz.")
+        assert not warnings, "\n".join(warnings)
+    finally:
+        window.close()
+        engine.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)

@@ -13,6 +13,13 @@ and the GLM API key are also persisted.
 
 ## Desktop interface
 
+The home screen brings meal planning, pantry stock and outstanding groceries
+together in three live summary cards that open their respective pages. A kitchen
+illustration, consistent line icons and a sage-and-teal palette give the desktop
+a shared visual identity. Buttons, page changes and dialog openings use brief,
+subtle transitions. The assistant's example buttons fill the request field for
+editing; requests are only sent when you click **Send request**.
+
 - **AI assistant:** type or dictate a request, then click **Send request**. A valid
   request automatically adds named meals with recipes, explicit purchases and
   pantry updates. A spinner, elapsed time and stage history show GLM interpretation,

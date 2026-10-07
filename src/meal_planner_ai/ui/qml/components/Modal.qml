@@ -11,6 +11,9 @@ Dialog {
     padding: 24
     topPadding: 18
     closePolicy: Popup.CloseOnEscape
+    enter: Transition {
+        NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.motionDuration }
+    }
     background: Rectangle {
         color: Theme.surface
         radius: 18

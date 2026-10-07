@@ -42,7 +42,7 @@ ApplicationWindow {
 
     Rectangle {
         id: sidebar
-        width: window.width < 1100 ? 188 : 218
+        width: window.width < 1100 ? 208 : 232
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         color: Theme.sidebar
@@ -59,26 +59,34 @@ ApplicationWindow {
             spacing: 8
             RowLayout {
                 Layout.topMargin: 16
-                Layout.bottomMargin: 48
+                Layout.bottomMargin: 32
                 spacing: 10
                 Rectangle {
                     width: 34
                     height: 34
                     radius: 11
                     color: Theme.accent
-                    Text {
+                    AppIcon {
                         anchors.centerIn: parent
-                        text: "m"
-                        font.pixelSize: 25
-                        font.weight: Font.Bold
+                        name: "meal"
                         color: Theme.accentDark
+                        width: 26
+                        height: 26
                     }
                 }
-                Text {
-                    text: "Meal Planner AI"
-                    font.pixelSize: window.width < 1100 ? 14 : 15
-                    font.weight: Font.DemiBold
-                    color: Theme.text
+                ColumnLayout {
+                    spacing: 3
+                    Text {
+                        text: "Meal Planner AI"
+                        font.pixelSize: 14
+                        font.weight: Font.DemiBold
+                        color: Theme.text
+                    }
+                    Caption {
+                        text: I18n.tr("Votre cuisine, connectée")
+                        font.pixelSize: 10
+                        color: Theme.secondary
+                    }
                 }
             }
             Caption {
@@ -90,113 +98,50 @@ ApplicationWindow {
             }
             Repeater {
                 model: [
-                    {
-                        title: I18n.tr("Assistant IA"),
-                        icon: "✦",
-                        page: 5
-                    },
-                    {
-                        page: 0,
-                        title: I18n.tr("Planning"),
-                        icon: "▦"
-                    },
-                    {
-                        page: 1,
-                        title: I18n.tr("Réserve"),
-                        icon: "▤"
-                    },
-                    {
-                        page: 2,
-                        title: I18n.tr("Courses"),
-                        icon: "✓"
-                    },
-                    {
-                        page: 3,
-                        title: I18n.tr("Foyer"),
-                        icon: "⌂"
-                    }
+                    { title: I18n.tr("Assistant IA"), icon: "assistant", page: 5, count: 0 },
+                    { title: I18n.tr("Planning"), icon: "planning", page: 0, count: window.demo.meals.length },
+                    { title: I18n.tr("Réserve"), icon: "pantry", page: 1, count: window.demo.pantry.length },
+                    { title: I18n.tr("Courses"), icon: "groceries", page: 2,
+                      count: window.demo.groceries.filter(item => !item.available && !item.checked).length },
+                    { title: I18n.tr("Foyer"), icon: "household", page: 3, count: 0 }
                 ]
-                delegate: Button {
-                    id: nav
+                delegate: NavButton {
                     required property var modelData
-                    required property int index
                     objectName: "nav" + modelData.page
                     Layout.fillWidth: true
-                    implicitHeight: 48
-                    hoverEnabled: true
-                    Accessible.name: modelData.title
+                    text: modelData.title
+                    iconName: modelData.icon
+                    count: modelData.count
+                    selected: window.currentPage === modelData.page
                     onClicked: window.currentPage = modelData.page
-                    background: Rectangle {
-                        radius: 10
-                        color: window.currentPage === nav.modelData.page ? "#3a493d" : nav.hovered ? Theme.raised : "transparent"
-                        border.color: nav.activeFocus ? Theme.accent : "transparent"
-                    }
-                    contentItem: RowLayout {
-                        spacing: 12
-                        Text {
-                            text: nav.modelData.icon
-                            font.pixelSize: 22
-                            color: window.currentPage === nav.modelData.page ? Theme.accent : Theme.muted
-                            Layout.preferredWidth: 24
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-                        Text {
-                            text: nav.modelData.title
-                            font.pixelSize: 14
-                            font.weight: window.currentPage === nav.modelData.page ? Font.DemiBold : Font.Normal
-                            color: window.currentPage === nav.modelData.page ? Theme.accent : Theme.muted
-                            Layout.fillWidth: true
-                        }
-                    }
                 }
             }
             Item {
                 Layout.fillHeight: true
             }
-            Button {
-                id: agentNav
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.bottomMargin: 8
+                implicitHeight: 1
+                color: Theme.border
+                opacity: 0.5
+            }
+            NavButton {
                 objectName: "nav6"
                 Layout.fillWidth: true
-                implicitHeight: 48
                 text: I18n.tr("Interactions IA")
-                Accessible.name: text
-                hoverEnabled: true
+                iconName: "agents"
+                selected: window.currentPage === 6
                 onClicked: window.currentPage = 6
-                background: Rectangle {
-                    radius: 10
-                    color: window.currentPage === 6 ? "#3a493d" : agentNav.hovered ? Theme.raised : "transparent"
-                    border.color: agentNav.activeFocus ? Theme.accent : "transparent"
-                }
-                contentItem: Text {
-                    text: "⇄  " + agentNav.text
-                    leftPadding: 12
-                    verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 14
-                    color: window.currentPage === 6 ? Theme.accent : Theme.muted
-                }
             }
-            Button {
-                id: settingsNav
+            NavButton {
                 objectName: "nav4"
                 Layout.fillWidth: true
                 Layout.bottomMargin: 8
-                implicitHeight: 48
                 text: I18n.tr("Paramètres")
-                Accessible.name: text
-                hoverEnabled: true
+                iconName: "settings"
+                selected: window.currentPage === 4
                 onClicked: window.currentPage = 4
-                background: Rectangle {
-                    radius: 10
-                    color: window.currentPage === 4 ? "#3a493d" : settingsNav.hovered ? Theme.raised : "transparent"
-                    border.color: settingsNav.activeFocus ? Theme.accent : "transparent"
-                }
-                contentItem: Text {
-                    text: "⚙  " + settingsNav.text
-                    leftPadding: 12
-                    verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 14
-                    color: window.currentPage === 4 ? Theme.accent : Theme.muted
-                }
             }
         }
     }
@@ -211,10 +156,20 @@ ApplicationWindow {
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 102
-            Heading {
-                text: window.pageTitles[window.currentPage]
-                font.pixelSize: 27
+            ColumnLayout {
                 Layout.fillWidth: true
+                spacing: 5
+                Caption {
+                    text: I18n.tr("REPAS & COURSES À LA MAISON")
+                    color: Theme.secondary
+                    font.pixelSize: 10
+                    font.letterSpacing: 1.3
+                }
+                Heading {
+                    text: window.pageTitles[window.currentPage]
+                    font.pixelSize: 25
+                    Layout.fillWidth: true
+                }
             }
             Rectangle {
                 width: 112
@@ -235,6 +190,16 @@ ApplicationWindow {
             Layout.fillHeight: true
             Layout.bottomMargin: 24
             currentIndex: window.currentPage
+            onCurrentIndexChanged: pageReveal.restart()
+            NumberAnimation {
+                id: pageReveal
+                target: pages
+                property: "opacity"
+                from: 0.65
+                to: 1
+                duration: Theme.motionDuration
+                easing.type: Easing.OutCubic
+            }
             PlanningPage {
                 store: window.demo
                 onConfigureRequested: planningDialog.open()
@@ -259,6 +224,8 @@ ApplicationWindow {
             AssistantPage {
                 store: window.demo
                 onPlanningRequested: window.currentPage = 0
+                onPantryRequested: window.currentPage = 1
+                onGroceriesRequested: window.currentPage = 2
                 onConfigureRequested: planningDialog.open()
             }
             AgentInteractionsPage {}
