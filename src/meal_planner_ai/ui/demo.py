@@ -361,14 +361,30 @@ class DemoState(QObject):
 
     @Property("QVariantList", notify=changed)
     def pantry(self):
-        return [
-            dict(
-                item,
-                name=translate_food(item["name"], self._language),
-                quantity=quantity_text(item["amount"], item["unit"], self._language),
+        usage = {
+            (canonical_food(item.name).casefold(), item.unit): item.available
+            for item in calculate_groceries(self._planned_ingredients(), self._pantry)
+        }
+        result = []
+        for item in self._pantry:
+            key = (canonical_food(item["name"]).casefold(), item["unit"])
+            consumed = min(item["amount"], usage.get(key, 0))
+            usage[key] = max(0, usage.get(key, 0) - consumed)
+            remaining = max(0, item["amount"] - consumed)
+            result.append(
+                dict(
+                    item,
+                    name=translate_food(item["name"], self._language),
+                    quantity=quantity_text(
+                        item["amount"], item["unit"], self._language
+                    ),
+                    remainingAmount=remaining,
+                    remainingQuantity=quantity_text(
+                        remaining, item["unit"], self._language
+                    ),
+                )
             )
-            for item in self._pantry
-        ]
+        return result
 
     def _eligible(self):
         excluded = [

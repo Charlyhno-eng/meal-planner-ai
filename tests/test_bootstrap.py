@@ -348,3 +348,37 @@ def test_recipe_missing_ingredient_button_updates_live(qt_app):
         window.close()
         engine.deleteLater()
         QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+
+
+def test_pantry_projection_updates_live(qt_app):
+    demo = DemoState()
+    assert demo.configure("2026-10-07", 1, 1, 2, False, "")
+    assert demo.saveFood(-1, "Quinoa", 500, "g", "Épicerie")
+    item_id = demo.pantry[-1]["id"]
+    engine = QQmlApplicationEngine()
+    warnings = []
+    engine.warnings.connect(lambda errors: warnings.extend(str(e) for e in errors))
+    engine.setInitialProperties({"demo": demo})
+    engine.load(Path(app.__file__).parent / "qml" / "Main.qml")
+    assert engine.rootObjects(), warnings
+    window = engine.rootObjects()[0]
+    try:
+        window.setProperty("currentPage", 1)
+        QTest.qWait(20)
+
+        def remaining_label():
+            return visual_child(window.contentItem(), f"pantryRemaining-{item_id}")
+
+        assert remaining_label().property("text") == "Après les repas : 340 g"
+        demo.setGuests(0, 2)
+        qt_app.processEvents()
+        assert remaining_label().property("text") == "Après les repas : 180 g"
+        demo.setLanguage("en")
+        qt_app.processEvents()
+        assert remaining_label().property("text") == "After meals: 180 g"
+        assert demo.pantry[-1]["amount"] == 500
+        assert not warnings, "\n".join(warnings)
+    finally:
+        window.close()
+        engine.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)

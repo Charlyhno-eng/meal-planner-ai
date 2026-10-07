@@ -464,3 +464,46 @@ def test_recipe_servings_control_updates_quantities(qt_app, fake_recipes):
         window.close()
         engine.deleteLater()
         QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+
+
+def test_projected_pantry_shares_stock_and_tracks_meal_changes(qt_app, fake_recipes):
+    state = DemoState()
+    assert state.saveFood(-1, "Mascarpone", 500, "g", "Produits frais")
+    assert state.saveFood(-1, "Sugar", 30, "g", "Épicerie")
+    assert state.saveFood(-1, "Mascarpone", 100, "ml", "Produits frais")
+    assert state.saveFood(-1, "Rice", 200, "g", "Épicerie")
+    before = state.planning_context()["pantry"]
+    assert [item["remainingAmount"] for item in state.pantry] == [500, 30, 100, 200]
+    state.apply_execution(
+        result_for(state, fake_recipes, actions=[meal_action(), meal_action()])
+    )
+    assert [item["remainingAmount"] for item in state.pantry] == [300, 0, 100, 200]
+    assert state.setMealServings(0, 6)
+    assert state.pantry[0]["remainingQuantity"] == "100 g"
+    state.setGuests(1, 3)
+    assert state.pantry[0]["remainingAmount"] == 0
+    assert state.addIngredientToGroceries(0, 0)
+    assert state.pantry[0]["remainingAmount"] == 0
+    assert state.planning_context()["pantry"] == before
+    assert state.removeRequest(state.meals[0]["requestId"])
+    assert state.pantry[0]["remainingAmount"] == 250
+    assert state.saveFood(
+        state.pantry[0]["id"], "Mascarpone", 600, "g", "Produits frais"
+    )
+    assert state.pantry[0]["remainingAmount"] == 350
+    assert state.removeRequest(state.meals[0]["requestId"])
+    assert state.pantry[0]["remainingAmount"] == 600
+    state.setLanguage("en")
+    assert state.pantry[3]["name"] == "Rice"
+    assert state.pantry[3]["remainingQuantity"] == "200 g"
+
+
+def test_projected_pantry_does_not_use_duplicate_stock_twice(qt_app, fake_recipes):
+    state = DemoState()
+    state._pantry = [
+        dict(id=1, name="Sucre", amount=10, unit="g", category="Épicerie"),
+        dict(id=2, name="Sugar", amount=50, unit="g", category="Épicerie"),
+    ]
+    state.apply_execution(result_for(state, fake_recipes))
+    assert [item["remainingAmount"] for item in state.pantry] == [0, 40]
+    assert [item["amount"] for item in state.pantry] == [10, 50]

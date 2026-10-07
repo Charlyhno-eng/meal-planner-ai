@@ -372,5 +372,8 @@
   "Animation illustrative des échanges, sans suivi d’activité en direct.": "Illustrative exchange animation, without live activity tracking.",
   "Échanges illustrés": "Illustrated exchanges",
   "Portions (hors invités)": "Servings (excluding guests)",
-  "Paramètres des repas": "Meal settings"
+  "Paramètres des repas": "Meal settings",
+  "Actuellement : ": "Currently: ",
+  "Après les repas : ": "After meals: ",
+  "Reste théorique après tous les repas proposés, portions et invités inclus. Les achats ne sont pas inclus ; votre réserve actuelle reste inchangée.": "Theoretical stock after all proposed meals, including servings and guests. Purchases are excluded; your current pantry stays unchanged."
 }

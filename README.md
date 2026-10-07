@@ -47,7 +47,11 @@ over an icon to see its page name.
   Recipe ingredients show compact pantry and grocery coverage checks for the full
   plan, including guests. Missing ingredients are not added automatically. Click the small +
   button to save an uncovered quantity to the grocery list.
-- **Pantry:** add, edit, search, filter, and remove your own foods.
+- **Pantry:** add, edit, search, filter, and remove your own foods. Each food
+  shows its current quantity and theoretical remaining stock after preparing all
+  proposed meals, including adjusted servings and guests. Requirements are shared
+  across recipes and matched by food name and unit; remaining stock stops at zero.
+  Purchases are excluded from this projection, and actual stock is not changed.
 - **Groceries:** includes explicit purchases even without recipes or planned
   meals. Each added purchase shows its period; check it off, copy it, or remove
   it. Ingredients selected from recipes are saved as explicit purchases.

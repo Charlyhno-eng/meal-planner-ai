@@ -31,6 +31,11 @@ ColumnLayout {
             onClicked: page.foodRequested(null)
         }
     }
+    Caption {
+        text: I18n.tr("Reste théorique après tous les repas proposés, portions et invités inclus. Les achats ne sont pas inclus ; votre réserve actuelle reste inchangée.")
+        Layout.fillWidth: true
+        wrapMode: Text.WordWrap
+    }
     Field {
         id: search
         objectName: "pantrySearch"
@@ -66,7 +71,7 @@ ColumnLayout {
                     id: foodRow
                     required property var modelData
                     Layout.fillWidth: true
-                    implicitHeight: 80
+                    implicitHeight: 92
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 16
@@ -103,10 +108,17 @@ ColumnLayout {
                                 font.pixelSize: 12
                             }
                         }
-                        Text {
-                            text: foodRow.modelData.quantity
-                            color: Theme.text
-                            font.pixelSize: 14
+                        ColumnLayout {
+                            spacing: 5
+                            Caption {
+                                text: I18n.tr("Actuellement : ") + foodRow.modelData.quantity
+                                color: Theme.text
+                            }
+                            Caption {
+                                objectName: "pantryRemaining-" + foodRow.modelData.id
+                                text: I18n.tr("Après les repas : ") + foodRow.modelData.remainingQuantity
+                                color: Theme.accent
+                            }
                         }
                         ActionButton {
                             text: I18n.tr("Modifier")
