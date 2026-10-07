@@ -8,6 +8,9 @@ ScrollView {
     objectName: "assistantPage"
     required property var store
     property var assistant: store.assistant
+    property int dictationTarget: 0
+    property int submittedTarget: 0
+    property bool clearingRequest: false
     readonly property bool compact: height < 680
     signal planningRequested
     signal pantryRequested
@@ -159,22 +162,36 @@ ScrollView {
                             ToolTip.visible: hovered
                             ToolTip.text: modelData.prompt
                             onClicked: {
-                                request.text = modelData.prompt;
-                                request.forceActiveFocus();
-                                request.cursorPosition = request.length;
+                                const field = fields.itemAt(index === 0 ? 0 : index === 1 ? 2 : 1).field;
+                                field.text = modelData.prompt;
+                                field.forceActiveFocus();
+                                field.cursorPosition = field.length;
                             }
                         }
                     }
                     Item { Layout.fillWidth: true }
                 }
+                Repeater {
+                    id: fields
+                    model: [
+                        { label: "Mes repas", name: "planningRequest", example: "Ex. Je veux faire un tiramisu pour six personnes.", context: "" },
+                        { label: "Ma réserve", name: "pantryRequest", example: "J’ai 500 g de riz.", context: "Aliments disponibles en réserve : " },
+                        { label: "Mes courses", name: "groceryRequest", example: "Ajoute trois pommes de terre à acheter la semaine prochaine.", context: "Courses à acheter : " }
+                    ]
+                    delegate: ColumnLayout {
+                        required property var modelData
+                        required property int index
+                        property alias field: request
+                        Layout.fillWidth: true
+                        Caption { text: I18n.tr(modelData.label) }
                 TextArea {
                     id: request
-                    objectName: "planningRequest"
+                    objectName: modelData.name
                     Layout.fillWidth: true
-                    Layout.preferredHeight: page.compact ? 90 : 112
+                    Layout.preferredHeight: page.compact ? 64 : 80
                     enabled: !page.assistant.busy && !page.assistant.recording
-                    placeholderText: I18n.tr("Ex. Je veux faire un tiramisu pour six personnes.")
-                    Accessible.name: I18n.tr("Votre demande")
+                    placeholderText: I18n.tr(modelData.example)
+                    Accessible.name: I18n.tr(modelData.label)
                     wrapMode: TextEdit.WordWrap
                     color: Theme.text
                     placeholderTextColor: Theme.muted
@@ -191,34 +208,46 @@ ScrollView {
                             ColorAnimation { duration: Theme.motionDuration }
                         }
                     }
-                    onTextChanged: page.assistant.discard()
+                    onTextChanged: if (!page.clearingRequest) page.assistant.discard()
                 }
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 12
                     ActionButton {
-                        objectName: "dictationButton"
+                        objectName: index === 0 ? "dictationButton" : modelData.name + "DictationButton"
                         text: page.assistant.recording ? I18n.tr("Arrêter et transcrire") : I18n.tr("Dicter ma demande")
-                        enabled: !page.assistant.busy
-                        onClicked: page.assistant.recording ? page.assistant.stopDictation() : page.assistant.startDictation()
+                        quiet: true
+                        implicitWidth: 34
+                        implicitHeight: 34
+                        padding: 6
+                        ToolTip.visible: hovered
+                        ToolTip.text: text
+                        contentItem: AppIcon { name: "microphone"; color: page.assistant.recording ? Theme.danger : Theme.muted }
+                        enabled: !page.assistant.busy && (!page.assistant.recording || page.dictationTarget === index)
+                        onClicked: {
+                            if (page.assistant.recording) page.assistant.stopDictation();
+                            else { page.dictationTarget = index; page.assistant.startDictation(); }
+                        }
                     }
                     ActionButton {
-                        visible: page.assistant.recording
+                        visible: page.assistant.recording && page.dictationTarget === index
                         text: I18n.tr("Annuler")
                         quiet: true
                         onClicked: page.assistant.cancelDictation()
                     }
                     Item { Layout.fillWidth: true }
                     ActionButton {
-                        objectName: "generatePlanButton"
+                        objectName: index === 0 ? "generatePlanButton" : modelData.name + "SendButton"
                         text: I18n.tr("Envoyer la demande")
                         primary: true
                         enabled: request.text.trim().length > 0 && !page.assistant.busy && !page.assistant.recording
-                        onClicked: page.assistant.plan(request.text)
+                        onClicked: { page.submittedTarget = index; page.assistant.plan(I18n.tr(modelData.context) + request.text); }
+                    }
+                }
                     }
                 }
                 Caption {
-                    text: page.assistant.recording ? I18n.tr("Enregistrement en cours — 20 secondes maximum.") : page.assistant.busy ? page.assistant.status : I18n.tr("Dictée locale avec Parakeet. Le texte et le contexte sont envoyés à GLM pour interprétation.")
+                    text: page.assistant.recording ? I18n.tr("Enregistrement en cours — 5 minutes maximum.") : page.assistant.busy ? page.assistant.status : I18n.tr("Dictée locale avec Parakeet. Le texte et le contexte sont envoyés à GLM pour interprétation.")
                     Layout.fillWidth: true
                     font.pixelSize: 11
                     wrapMode: Text.WordWrap
@@ -326,8 +355,13 @@ ScrollView {
     Connections {
         target: page.assistant
         function onTranscribed(text) {
-            request.text = request.text.length ? request.text + " " + text : text;
+            const field = fields.itemAt(page.dictationTarget).field;
+            field.text = field.text.length ? field.text + " " + text : text;
         }
-
+        function onApplied() {
+            page.clearingRequest = true;
+            fields.itemAt(page.submittedTarget).field.text = "";
+            page.clearingRequest = false;
+        }
     }
 }

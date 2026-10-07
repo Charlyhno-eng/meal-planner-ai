@@ -31,7 +31,19 @@ Canvas {
             ctx.arc(x, y, radius, 0, Math.PI * 2);
             ctx.stroke();
         }
-        if (name === "assistant") {
+        if (name === "microphone") {
+            ctx.beginPath();
+            ctx.arc(12, 6, 3, Math.PI, 0);
+            ctx.lineTo(15, 12);
+            ctx.arc(12, 12, 3, 0, Math.PI);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(12, 12, 6, 0, Math.PI);
+            ctx.stroke();
+            path([[12, 18], [12, 22]]);
+            path([[8, 22], [16, 22]]);
+        } else if (name === "assistant") {
             path([[12, 3], [14.5, 9.5], [21, 12], [14.5, 14.5], [12, 21], [9.5, 14.5], [3, 12], [9.5, 9.5], [12, 3]]);
             path([[20, 2], [20, 6]]);
             path([[18, 4], [22, 4]]);

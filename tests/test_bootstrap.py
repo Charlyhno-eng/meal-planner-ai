@@ -91,7 +91,7 @@ def test_desktop_navigation_and_dialogs(qt_app):
         agents_bottom = agents_nav.mapToScene(QPoint(0, 48)).y()
         assert settings_top > agents_bottom
         assert settings_top + settings_nav.height() >= window.height() - 30
-        assert window.findChild(QObject, "planningRequest") is not None
+        assert visual_child(window.contentItem(), "planningRequest") is not None
         for index in range(7):
             nav = visual_child(window.contentItem(), f"nav{index}")
             position = nav.mapToScene(QPoint(20, 20))
@@ -216,7 +216,8 @@ def test_home_shortcuts_and_live_summaries(qt_app, tmp_path, language, width, he
         assert not send.property("enabled")
         before = demo.planning_context()
         click(visual_child(window.contentItem(), "requestExample2"))
-        request = window.findChild(QObject, "planningRequest")
+        request = visual_child(window.contentItem(), "pantryRequest")
+        send = visual_child(window.contentItem(), "pantryRequestSendButton")
         assert request.property("text") == demo.translate("J’ai 500 g de riz.")
         assert request.property("activeFocus")
         assert send.property("enabled")

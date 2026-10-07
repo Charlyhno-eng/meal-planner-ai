@@ -238,7 +238,11 @@ def test_home_dictation_and_automatic_application(qt_app, monkeypatch, fake_reci
     demo.setGlmApiKey("test-key")
     try:
         assert window.property("currentPage") == 5
-        request = window.findChild(QObject, "planningRequest")
+        request = visual_child(window.contentItem(), "planningRequest")
+        pantry = visual_child(window.contentItem(), "pantryRequest")
+        groceries = visual_child(window.contentItem(), "groceryRequest")
+        pantry.setProperty("text", "500 g de riz")
+        groceries.setProperty("text", "Trois pommes")
         request.setProperty("text", "Deux repas")
         assistant.transcribed.emit("pour trois personnes")
         assert request.property("text") == "Deux repas pour trois personnes"
@@ -251,6 +255,7 @@ def test_home_dictation_and_automatic_application(qt_app, monkeypatch, fake_reci
         wait_for_job(assistant)
         assert "GLM" in assistant.error
         assert demo.settings == before
+        assert request.property("text") == "Deux repas pour trois personnes"
 
         monkeypatch.setattr(
             "meal_planner_ai.workflow.coordinator.interpret_request",
@@ -268,6 +273,10 @@ def test_home_dictation_and_automatic_application(qt_app, monkeypatch, fake_reci
         assert not assistant.proposal
         assert demo.meals[-1]["servings"] == 6
         assert demo.meals[-1]["title"] == "Tiramisu"
+        assert request.property("text") == ""
+        assert pantry.property("text") == "500 g de riz"
+        assert groceries.property("text") == "Trois pommes"
+        assert assistant.completedActions
         assert demo.settings == before
         request.setProperty("text", "Une autre demande")
         assert not assistant.completedActions
@@ -286,8 +295,7 @@ def test_home_dictation_and_automatic_application(qt_app, monkeypatch, fake_reci
         monkeypatch.setattr(
             assistant.speech, "path", Path("/tmp/no-such-parakeet-model")
         )
-        position = button.mapToScene(QPoint(20, 20))
-        QTest.mouseClick(window, Qt.LeftButton, Qt.NoModifier, position.toPoint())
+        button.clicked.emit()
         assert "missing" in assistant.error
         assert not assistant.recording
         assert window.property("currentPage") == 4
@@ -400,14 +408,22 @@ def test_microphone_capture_stop_cancel_and_duration_limit(qt_app, monkeypatch):
         Source.data = b"\x00\x00" * (16000 * 21)
         assistant.startDictation()
         assistant._read_audio()
+        assert assistant.recording
+        assert assistant._timer.interval() == 300000
+        assistant.stopDictation()
         wait_for_job(assistant)
-        assert captured[-1] == (640000, 16000)
+        assert captured[-1] == (672000, 16000)
+        Source.data = b"\x00\x00" * (16000 * 301)
+        assistant.startDictation()
+        assistant._read_audio()
+        wait_for_job(assistant)
+        assert captured[-1] == (bridge.MAX_DICTATION_BYTES, 16000)
         assert not assistant.recording
         Source.data = b"\x00\x00"
         assistant.startDictation()
         assistant.stopDictation()
         assert "court" in assistant.error
-        assert len(captured) == 2
+        assert len(captured) == 3
     finally:
         assistant.shutdown()
 

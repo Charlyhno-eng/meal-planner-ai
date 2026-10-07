@@ -53,6 +53,10 @@ class Job(QRunnable):
             )
 
 
+MAX_DICTATION_SECONDS = 300
+MAX_DICTATION_BYTES = MAX_DICTATION_SECONDS * 32000
+
+
 class PlanningAssistant(QObject):
     changed = Signal()
     transcribed = Signal(str)
@@ -434,7 +438,7 @@ class PlanningAssistant(QObject):
                     "Impossible d’ouvrir le microphone. Vérifiez les permissions."
                 )
             self._device.readyRead.connect(self._read_audio)
-            self._timer.start(20000)
+            self._timer.start(MAX_DICTATION_SECONDS * 1000)
         except MissingParakeetError as exc:
             self._error = str(exc)
             self.modelSetupRequested.emit()
@@ -452,10 +456,10 @@ class PlanningAssistant(QObject):
     @Slot()
     def _read_audio(self):
         if self._device is not None:
-            # Bound recordings to 20 seconds of 16 kHz, signed 16-bit mono PCM.
-            remaining = 640000 - len(self._pcm)
+            # Bound recordings to five minutes of 16 kHz, signed 16-bit mono PCM.
+            remaining = MAX_DICTATION_BYTES - len(self._pcm)
             self._pcm.extend(bytes(self._device.readAll())[:remaining])
-            if len(self._pcm) >= 640000:
+            if len(self._pcm) >= MAX_DICTATION_BYTES:
                 self.stopDictation()
 
     def _release_audio(self):
@@ -490,7 +494,7 @@ class PlanningAssistant(QObject):
             return
         # Drain any last samples without recursively invoking this slot.
         if self._device is not None:
-            remaining = 640000 - len(self._pcm)
+            remaining = MAX_DICTATION_BYTES - len(self._pcm)
             self._pcm.extend(bytes(self._device.readAll())[:remaining])
         self._release_audio()
         pcm = bytes(self._pcm)

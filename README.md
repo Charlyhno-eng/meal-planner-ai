@@ -140,8 +140,11 @@ directory. Alternatively, point it to your existing export:
 MEAL_PLANNER_PARAKEET_DIR=/absolute/path/to/parakeet-v3 uv run meal-planner-ai
 ```
 
-Click **Dictate my request**, speak, then **Stop and transcribe**. The app captures
-16 kHz, signed 16-bit mono microphone audio and stops automatically after 20 seconds.
+Use the independent meals, pantry and groceries fields to send requests separately.
+Each field has a small microphone button (**Dictate my request**): click it to
+record and click again to **Stop and transcribe**. A field clears after its request
+is saved successfully; other drafts and requests needing clarification or retry remain. The app captures
+16 kHz, signed 16-bit mono microphone audio and stops automatically after five minutes.
 Repeat to append another segment. Microphone access must be allowed by the OS and
 the device must support that format. Cancel or leave the home page to discard an
 unfinished recording. Audio stays in memory and is transcribed locally on CPU;

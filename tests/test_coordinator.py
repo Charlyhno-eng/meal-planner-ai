@@ -8,7 +8,7 @@ from urllib.error import HTTPError
 
 import pytest
 from pydantic import ValidationError
-from PySide6.QtCore import QCoreApplication, QEvent, QMetaObject, QObject
+from PySide6.QtCore import QCoreApplication, QEvent, QMetaObject
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtTest import QTest
 
@@ -342,7 +342,9 @@ def test_home_voice_text_purchase_and_planned_meal_views(
         lambda s, key: {"proposal": CoordinatorProposal(actions=actions()[:2])},
     )
     try:
-        request = window.findChild(QObject, "planningRequest")
+        from test_bootstrap import visual_child
+
+        request = visual_child(window.contentItem(), "planningRequest")
         # Local transcription enters the very same input used by typed requests.
         state.assistant._transcribed("Un tiramisu pour six personnes", "")
         assert request.property("text") == "Un tiramisu pour six personnes"
@@ -351,7 +353,7 @@ def test_home_voice_text_purchase_and_planned_meal_views(
             request.property("text")
             + ". Trois pommes de terre à acheter la semaine prochaine",
         )
-        button = window.findChild(QObject, "generatePlanButton")
+        button = visual_child(window.contentItem(), "generatePlanButton")
         QMetaObject.invokeMethod(button, "click")
         wait_for_job(state.assistant)
         assert state.assistant.proposal == {}
