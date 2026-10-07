@@ -5,6 +5,7 @@ import re
 from meal_planner_ai.domain.foods import food_terms
 from meal_planner_ai.errors import MealPlannerError
 from meal_planner_ai.models.coordinator import RequestedMeal
+from meal_planner_ai.models.household import excluded_terms
 
 
 class PreferenceConflict(MealPlannerError):
@@ -38,11 +39,7 @@ NON_VEGETARIAN = {
 
 
 def check_preferences(meals: list[RequestedMeal], settings: dict) -> None:
-    excluded = [
-        word.strip().casefold()
-        for word in settings["dislikes"].split(",")
-        if word.strip()
-    ]
+    excluded = excluded_terms(settings)
     for meal in meals:
         recipe = meal.recipe
         if recipe is None:

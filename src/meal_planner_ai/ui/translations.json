@@ -375,5 +375,14 @@
   "Paramètres des repas": "Meal settings",
   "Actuellement : ": "Currently: ",
   "Après les repas : ": "After meals: ",
-  "Reste théorique après tous les repas proposés, portions et invités inclus. Les achats ne sont pas inclus ; votre réserve actuelle reste inchangée.": "Theoretical stock after all proposed meals, including servings and guests. Purchases are excluded; your current pantry stays unchanged."
+  "Reste théorique après tous les repas proposés, portions et invités inclus. Les achats ne sont pas inclus ; votre réserve actuelle reste inchangée.": "Theoretical stock after all proposed meals, including servings and guests. Purchases are excluded; your current pantry stays unchanged.",
+  "Personne ": "Person ",
+  "Nom": "Name",
+  "Intolérances : ": "Intolerances: ",
+  "Aucune": "None",
+  "Ex. lactose, gluten, arachides": "E.g. lactose, gluten, peanuts",
+  "Intolérances, séparées par des virgules": "Intolerances, separated by commas",
+  "Les intolérances de chacun s’appliquent à tous les repas du foyer.": "Each person’s intolerances apply to every household meal.",
+  "Impossible de lire data/household.json.": "Unable to read data/household.json.",
+  "Impossible d’enregistrer le foyer. Réessayez.": "Unable to save the household. Try again."
 }

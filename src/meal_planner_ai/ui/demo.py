@@ -1,5 +1,6 @@
 """Desktop session services and persisted generated meals and purchases."""
 
+from copy import deepcopy
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from meal_planner_ai.models.coordinator import (
     ShoppingItem,
 )
 from meal_planner_ai.models.execution import MealExecution
+from meal_planner_ai.models.household import Household, HouseholdMember, excluded_terms
 from meal_planner_ai.models.planning import (
     PlanningProposal,
     PlanningSettings,
@@ -33,6 +35,7 @@ from meal_planner_ai.storage.config import (
     save_language,
 )
 from meal_planner_ai.storage.coordinator import load_coordinator, save_coordinator
+from meal_planner_ai.storage.household import load_household, save_household
 from meal_planner_ai.ui.assistant import PlanningAssistant
 from meal_planner_ai.ui.i18n import ENGLISH, canonical_food, translate, translate_food
 from meal_planner_ai.workflow.coordinator import build_coordinator_workflow
@@ -100,7 +103,19 @@ class DemoState(QObject):
             "people": 2,
             "vegetarian": False,
             "dislikes": "",
+            "members": [{"name": "", "intolerances": ""} for _ in range(2)],
         }
+        self._household_path = (
+            config_path.parent / "data" / "household.json" if config_path else None
+        )
+        self._household_error = ""
+        if self._household_path is not None:
+            try:
+                household = load_household(self._household_path)
+                if household is not None:
+                    self._settings.update(household.model_dump())
+            except (OSError, ValueError):
+                self._household_error = "Impossible de lire data/household.json."
         self._pantry = []
         self._next_id = 1
         self._plan = []
@@ -166,6 +181,18 @@ class DemoState(QObject):
             raise ValueError(self._coordinator_error)
         if self._coordinator_path is not None:
             save_coordinator(self._coordinator_path, data)
+
+    def _save_household(self, settings):
+        if self._household_error:
+            raise ValueError(self._household_error)
+        household = Household.model_validate(
+            {
+                key: settings[key]
+                for key in ("people", "members", "vegetarian", "dislikes")
+            }
+        )
+        if self._household_path is not None:
+            save_household(self._household_path, household)
 
     def apply_execution(self, execution: MealExecution):
         """Revalidate the complete batch before one atomic persistence operation."""
@@ -282,7 +309,21 @@ class DemoState(QObject):
             else:
                 pantry.append(dict(id=next_id, **food))
                 next_id += 1
-        self._settings = proposal.settings.model_dump(mode="json")
+        proposed = proposal.settings.model_dump(mode="json")
+        if not proposed["members"]:
+            proposed["members"] = [
+                self._settings["members"][i]
+                if i < len(self._settings["members"])
+                else HouseholdMember().model_dump()
+                for i in range(proposed["people"])
+            ]
+            validate_recipes(
+                proposal.model_copy(update={"settings": PlanningSettings(**proposed)}),
+                self.recipe_catalogue,
+                ENGLISH,
+            )
+        self._save_household(proposed)
+        self._settings = proposed
         self._plan = proposal.recipe_ids.copy()
         self._guests = {guest.meal: guest.count for guest in proposal.guests}
         self._pantry = pantry
@@ -348,7 +389,7 @@ class DemoState(QObject):
 
     @Property("QVariantMap", notify=changed)
     def settings(self):
-        return self._settings.copy()
+        return deepcopy(self._settings)
 
     @Property(str, notify=changed)
     def period(self):
@@ -387,11 +428,7 @@ class DemoState(QObject):
         return result
 
     def _eligible(self):
-        excluded = [
-            word.strip().casefold()
-            for word in self._settings["dislikes"].split(",")
-            if word.strip()
-        ]
+        excluded = excluded_terms(self._settings)
         return [
             i
             for i, recipe in enumerate(self.recipe_catalogue)
@@ -615,7 +652,7 @@ class DemoState(QObject):
         return self._groceries()
 
     @Slot(str, int, int, int, bool, str, result=bool)
-    def configure(self, start, days, count, people, vegetarian, dislikes):
+    def configure(self, start, days, count, people, vegetarian, dislikes, members=None):
         try:
             date.fromisoformat(start)
         except ValueError:
@@ -629,6 +666,16 @@ class DemoState(QObject):
                 people=people,
                 vegetarian=vegetarian,
                 dislikes=dislikes.strip(),
+                members=(
+                    members
+                    if members is not None
+                    else [
+                        self._settings["members"][i]
+                        if i < len(self._settings["members"])
+                        else HouseholdMember().model_dump()
+                        for i in range(max(0, min(people, 12)))
+                    ]
+                ),
             )
         except ValidationError:
             self._notify(
@@ -647,12 +694,34 @@ class DemoState(QObject):
             self._settings = previous
             self._notify("Aucune recette ne correspond à ces préférences.")
             return False
+        try:
+            self._save_household(self._settings)
+        except (OSError, ValueError):
+            self._settings = previous
+            self._notify("Impossible d’enregistrer le foyer. Réessayez.")
+            return False
         self._guests.clear()
         self._checked.clear()
         self._make_plan()
         self.changed.emit()
         self._notify("Paramètres du planning actualisés")
         return True
+
+    @Property(str, notify=changed)
+    def householdError(self):
+        return self.translate(self._household_error)
+
+    @Slot("QVariantList", bool, str, result=bool)
+    def setHousehold(self, members, vegetarian, dislikes):
+        return self.configure(
+            self._settings["start"],
+            self._settings["days"],
+            self._settings["count"],
+            len(members),
+            vegetarian,
+            dislikes,
+            members=members,
+        )
 
     @Slot(int, result=bool)
     def replaceMeal(self, index):

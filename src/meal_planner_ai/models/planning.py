@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from meal_planner_ai.models.household import HouseholdMember, excluded_terms
+
 
 class PlanningSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -15,9 +17,12 @@ class PlanningSettings(BaseModel):
     people: int = Field(ge=1, le=12)
     vegetarian: bool
     dislikes: str = Field(max_length=1000)
+    members: list[HouseholdMember] = Field(default_factory=list, max_length=12)
 
     @model_validator(mode="after")
     def check_period(self):
+        if self.members and len(self.members) != self.people:
+            raise ValueError("Household size differs from member count")
         try:
             self.start + timedelta(days=self.days - 1)
         except OverflowError as exc:
@@ -62,11 +67,7 @@ class PlanningProposal(BaseModel):
 
 def validate_recipes(proposal: PlanningProposal, recipes: list[dict], english: dict):
     """Reject unknown recipes and exclusions independently of the LLM."""
-    excluded = [
-        word.strip().casefold()
-        for word in proposal.settings.dislikes.split(",")
-        if word.strip()
-    ]
+    excluded = excluded_terms(proposal.settings.model_dump())
     for recipe_id in proposal.recipe_ids:
         if not 0 <= recipe_id < len(recipes):
             raise ValueError("Unknown recipe")

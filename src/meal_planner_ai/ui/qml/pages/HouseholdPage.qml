@@ -61,6 +61,34 @@ ScrollView {
                         onClicked: page.preferencesRequested()
                     }
                 }
+                Caption {
+                    Layout.fillWidth: true
+                    visible: page.store.householdError.length > 0
+                    text: page.store.householdError
+                    color: Theme.muted
+                }
+                Repeater {
+                    model: page.store.settings.members
+                    delegate: ColumnLayout {
+                        id: profile
+                        required property var modelData
+                        required property int index
+                        Layout.fillWidth: true
+                        spacing: 6
+                        Text {
+                            Layout.fillWidth: true
+                            text: profile.modelData.name || (I18n.tr("Personne ") + (profile.index + 1))
+                            color: Theme.text
+                            font.pixelSize: 16
+                            font.weight: Font.DemiBold
+                            wrapMode: Text.WordWrap
+                        }
+                        Caption {
+                            Layout.fillWidth: true
+                            text: I18n.tr("Intolérances : ") + (profile.modelData.intolerances || I18n.tr("Aucune"))
+                        }
+                    }
+                }
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 1

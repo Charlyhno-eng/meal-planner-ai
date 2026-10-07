@@ -10,6 +10,7 @@ from meal_planner_ai.models.coordinator import (
     CoordinatorProposal,
     Period,
 )
+from meal_planner_ai.models.household import excluded_terms
 from meal_planner_ai.ui.i18n import ENGLISH, canonical_food
 
 
@@ -46,11 +47,7 @@ def build_coordinator_workflow(api_key: str = "", reason=None):
             raw.model_dump() if isinstance(raw, CoordinatorProposal) else raw
         )
         actions = []
-        excluded = [
-            word.strip().casefold()
-            for word in state["context"]["settings"]["dislikes"].split(",")
-            if word.strip()
-        ]
+        excluded = excluded_terms(state["context"]["settings"])
         for action in proposal.actions:
             values = action.model_dump()
             if action.service != "pantry_set":
