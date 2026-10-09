@@ -6,6 +6,8 @@ import "../components"
 ColumnLayout {
     id: page
     required property var store
+    signal assistantRequested
+    signal pantryRequested
     property bool showAvailable: false
     property var shopping: store.groceries.filter(item => !item.available)
     property int completed: shopping.filter(item => item.checked).length
@@ -26,6 +28,7 @@ ColumnLayout {
         }
         ActionButton {
             text: I18n.tr("Copier la liste")
+            enabled: page.shopping.length > 0
             onClicked: page.store.copyGroceries()
         }
     }
@@ -69,13 +72,13 @@ ColumnLayout {
                     color: Theme.border
                     Rectangle {
                         width: parent.width * (page.shopping.length ? page.completed
-                                                                      / page.shopping.length : (page.store.meals.length ? 1 : 0))
+                                                                      / page.shopping.length : (page.store.groceries.length ? 1 : 0))
                         height: parent.height
                         radius: 3
                         color: Theme.accent
                         Behavior on width {
                             NumberAnimation {
-                                duration: 180
+                                duration: Theme.motionDuration
                             }
                         }
                     }
@@ -117,9 +120,9 @@ ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 6
                     Caption {
-                        text: I18n.tr(group.modelData).toUpperCase()
+                        text: I18n.tr(group.modelData)
                         font.pixelSize: 11
-                        font.letterSpacing: 1.2
+                        font.weight: Font.DemiBold
                         Layout.topMargin: 10
                         Layout.bottomMargin: 4
                     }
@@ -215,26 +218,19 @@ ColumnLayout {
                     }
                 }
             }
-            ColumnLayout {
+            EmptyState {
+                objectName: "groceryEmptyState"
                 visible: page.displayed.length === 0
                 Layout.fillWidth: true
                 Layout.topMargin: 36
-                spacing: 12
-                Heading {
-                    text: page.showAvailable ? I18n.tr("Rien en réserve pour ces repas") : I18n.tr(
-                                                   "La liste est vide")
-                    Layout.alignment: Qt.AlignHCenter
-                }
-                Caption {
-                    text: page.store.meals.length === 0 ? I18n.tr("Aucun repas planifié pour le moment.") : page.showAvailable ? I18n.tr("Ajoutez vos aliments dans la réserve.") :
-                                               I18n.tr("Tous les ingrédients sont déjà disponibles.")
-                    Layout.alignment: Qt.AlignHCenter
-                }
+                title: page.showAvailable ? I18n.tr("Rien en réserve pour ces repas") : I18n.tr("La liste est vide")
+                description: page.showAvailable ? I18n.tr("Ajoutez vos aliments dans la réserve.") : I18n.tr("Ajoutez des achats dans l’assistant ou les ingrédients manquants depuis une recette.")
+                actionText: page.showAvailable ? I18n.tr("Ouvrir la réserve") : I18n.tr("Ajouter des achats")
+                onActivated: page.showAvailable ? page.pantryRequested() : page.assistantRequested()
             }
             Caption {
-                text: page.showAvailable ? I18n.tr(
-                                               "Quantités nécessaires aux repas, couvertes par votre réserve.") :
-                                           I18n.tr("Quantités restantes après utilisation de votre réserve.")
+                visible: page.displayed.length > 0
+                text: page.showAvailable ? I18n.tr("Quantités nécessaires aux repas, couvertes par votre réserve.") : I18n.tr("Achats ajoutés explicitement. Cocher un article ne modifie pas votre réserve.")
                 Layout.topMargin: 12
                 Layout.bottomMargin: 12
             }

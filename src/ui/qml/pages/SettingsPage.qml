@@ -7,53 +7,17 @@ ScrollView {
     id: page
     required property var store
     property var assistant: store.assistant
+    function showDictation() {
+        Qt.callLater(function() {
+            page.contentItem.contentY = Math.min(voicePanel.y, Math.max(0, page.contentItem.contentHeight - page.availableHeight));
+            downloadButton.forceActiveFocus();
+        });
+    }
     clip: true
     contentWidth: availableWidth
     ColumnLayout {
         width: page.availableWidth
         spacing: 20
-        Panel {
-            Layout.fillWidth: true
-            implicitHeight: voiceContent.implicitHeight + 48
-            ColumnLayout {
-                id: voiceContent
-                anchors.fill: parent
-                anchors.margins: 24
-                spacing: 18
-                Heading { text: "Parakeet TDT 0.6B v3" }
-                Caption {
-                    objectName: "parakeetStatus"
-                    text: I18n.tr(page.assistant.modelDownloading ? "Téléchargement du modèle en cours…" : page.assistant.modelInstalled ? "Modèle installé. Vous pouvez dicter votre demande." : "Modèle absent ou incomplet. Téléchargez-le pour utiliser la dictée.")
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                }
-                Caption {
-                    text: I18n.tr("Téléchargement depuis Hugging Face : environ 2,6 Go. Une connexion Internet est nécessaire.")
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                }
-                Caption {
-                    text: page.assistant.modelPath
-                    Layout.fillWidth: true
-                    wrapMode: Text.WrapAnywhere
-                }
-                ActionButton {
-                    objectName: "downloadParakeetButton"
-                    text: I18n.tr("Télécharger Parakeet")
-                    primary: true
-                    enabled: !page.assistant.modelInstalled && !page.assistant.busy && !page.assistant.recording
-                    onClicked: page.assistant.downloadModel()
-                }
-                BusyIndicator { running: page.assistant.modelDownloading; visible: running }
-                Caption {
-                    text: page.assistant.modelError
-                    visible: text.length > 0
-                    color: Theme.danger
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                }
-            }
-        }
         Panel {
             Layout.fillWidth: true
             implicitHeight: content.implicitHeight + 48
@@ -101,7 +65,8 @@ ScrollView {
                 anchors.fill: parent
                 anchors.margins: 24
                 spacing: 18
-                Heading { text: "GLM_ai · glm-5.3-flash" }
+                Heading { text: I18n.tr("Connexion à l’assistant") }
+                Caption { text: "GLM_ai / glm-5.3-flash" }
                 Caption { text: I18n.tr("Clé API GLM"); Layout.fillWidth: true }
                 RowLayout {
                     Layout.fillWidth: true
@@ -140,6 +105,72 @@ ScrollView {
                     visible: text.length > 0
                     color: Theme.danger
                     Layout.fillWidth: true
+                }
+            }
+        }
+        Panel {
+            Layout.fillWidth: true
+            implicitHeight: appearance.implicitHeight + 40
+            ColumnLayout {
+                id: appearance
+                anchors.fill: parent
+                anchors.margins: 20
+                spacing: 12
+                Heading { text: I18n.tr("Confort de lecture") }
+                Chip {
+                    objectName: "reduceMotionButton"
+                    text: I18n.tr("Réduire les animations")
+                    checked: Theme.reducedMotion
+                    onClicked: Theme.reducedMotion = !Theme.reducedMotion
+                }
+                Caption {
+                    Layout.fillWidth: true
+                    text: I18n.tr("Désactive les transitions et les mouvements de la carte IA pour cette session.")
+                }
+            }
+        }
+        Panel {
+            Layout.fillWidth: true
+            id: voicePanel
+            implicitHeight: voiceContent.implicitHeight + 48
+            ColumnLayout {
+                id: voiceContent
+                anchors.fill: parent
+                anchors.margins: 24
+                spacing: 18
+                Heading { text: I18n.tr("Dictée vocale") }
+                Caption { text: "Parakeet TDT 0.6B v3" }
+                Caption {
+                    objectName: "parakeetStatus"
+                    text: I18n.tr(page.assistant.modelDownloading ? "Téléchargement du modèle en cours…" : page.assistant.modelInstalled ? "Modèle installé. Vous pouvez dicter votre demande." : "Modèle absent ou incomplet. Téléchargez-le pour utiliser la dictée.")
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                }
+                Caption {
+                    text: I18n.tr("Téléchargement depuis Hugging Face : environ 2,6 Go. Une connexion Internet est nécessaire.")
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                }
+                Caption {
+                    text: page.assistant.modelPath
+                    Layout.fillWidth: true
+                    wrapMode: Text.WrapAnywhere
+                }
+                ActionButton {
+                    id: downloadButton
+                    objectName: "downloadParakeetButton"
+                    text: I18n.tr("Télécharger Parakeet")
+                    primary: true
+                    enabled: !page.assistant.modelInstalled && !page.assistant.busy && !page.assistant.recording
+                    onClicked: page.assistant.downloadModel()
+                }
+                BusyIndicator { running: page.assistant.modelDownloading; visible: running }
+                Caption {
+                    text: page.assistant.modelError
+                    visible: text.length > 0
+                    color: Theme.danger
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
                 }
             }
         }

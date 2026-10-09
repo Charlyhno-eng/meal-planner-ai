@@ -4,6 +4,7 @@ import QtQuick.Controls
 TextField {
     id: control
     implicitHeight: 44
+    selectByMouse: true
     color: Theme.text
     placeholderTextColor: Theme.muted
     selectionColor: Theme.accent

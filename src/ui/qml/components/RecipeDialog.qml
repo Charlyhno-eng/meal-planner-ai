@@ -5,6 +5,7 @@ import QtQuick.Layouts
 Modal {
     id: dialog
     required property var store
+    noticeSource: store
     property int mealId: -1
     property var meal: store.meals.find(item => item.id === mealId) || null
     title: I18n.tr("À cuisiner")
@@ -29,6 +30,8 @@ Modal {
             }
             Heading {
                 text: dialog.meal ? dialog.meal.title : ""
+                wrapMode: Text.WordWrap
+                elide: Text.ElideNone
                 Layout.fillWidth: true
             }
             Caption {
@@ -84,6 +87,7 @@ Modal {
                     Layout.fillWidth: true
                     Text {
                         text: parent.modelData.name
+                        wrapMode: Text.WordWrap
                         color: Theme.text
                         font.pixelSize: 14
                         Layout.fillWidth: true

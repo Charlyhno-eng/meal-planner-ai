@@ -81,6 +81,21 @@ over an icon to see its page name.
   to control this animation, which stops when the page is hidden. The animation
   illustrates the architecture; live stage history is in the assistant.
 
+Empty meal and grocery pages provide direct actions to create recipes or add
+purchases. Pantry searches and category filters share a **Clear filters** action
+when no food matches. Food quantities accept decimal points or commas and must
+be greater than zero and no higher than 100,000; an inline hint explains this
+limit. Dialogs keep operation feedback visible while open, and meal settings
+keep their save action visible while the fields scroll on smaller windows.
+Saving meal settings prepares future requests; creating recipes happens in the
+assistant. Grocery checkmarks do not update pantry stock.
+
+Settings presents language and assistant connection before optional appearance
+and dictation controls. If dictation needs setup, Settings scrolls directly to
+the voice download action and gives it keyboard focus. **Reduce animations** disables interface transitions and
+pauses movement on the AI map for the current session. Keyboard focus remains
+visible on buttons, selectors and number pickers.
+
 Use `Ctrl+1` for the assistant, `Ctrl+2` through `Ctrl+6` for Planning, Pantry,
 Groceries, Household, and Settings, and `Ctrl+7` for AI interactions. Dialogs
 can be closed with Escape. Form defaults, supported categories, translations,

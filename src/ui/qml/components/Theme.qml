@@ -16,6 +16,7 @@ QtObject {
     readonly property color secondary: "#94cec7"
     readonly property color selected: "#33493e"
     readonly property color hero: "#2d443d"
-    readonly property int motionDuration: 160
+    property bool reducedMotion: false
+    readonly property int motionDuration: reducedMotion ? 0 : 160
     readonly property color danger: "#f0b6a5"
 }

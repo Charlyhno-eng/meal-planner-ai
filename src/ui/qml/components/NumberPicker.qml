@@ -12,6 +12,7 @@ SpinBox {
         color: Theme.background
         radius: 9
         border.color: control.activeFocus ? Theme.accent : Theme.border
+        border.width: control.activeFocus ? 2 : 1
     }
     contentItem: Text {
         text: control.value

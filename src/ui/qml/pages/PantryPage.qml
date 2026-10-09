@@ -8,8 +8,9 @@ ColumnLayout {
     required property var store
     signal foodRequested(var food)
     property string category: "Tout"
+    readonly property bool filtering: search.text.trim().length > 0 || category !== "Tout"
     property var filtered: store.pantry.filter(item => (category === "Tout" || item.category === category)
-                           && item.name.toLocaleLowerCase().includes(search.text.toLocaleLowerCase(
+                           && item.name.toLocaleLowerCase().includes(search.text.trim().toLocaleLowerCase(
                                                                          )))
     spacing: 20
     RowLayout {
@@ -129,26 +130,17 @@ ColumnLayout {
                     }
                 }
             }
-            ColumnLayout {
+            EmptyState {
+                objectName: "pantryEmptyState"
                 visible: page.filtered.length === 0
                 Layout.fillWidth: true
-                Layout.topMargin: 60
-                spacing: 12
-                Heading {
-                    text: search.text ? I18n.tr("Aucun aliment trouvé") : I18n.tr(
-                                            "Votre réserve est vide")
-                    Layout.alignment: Qt.AlignHCenter
-                }
-                Caption {
-                    text: search.text ? I18n.tr("Essayez un autre nom ou une autre catégorie.") :
-                                        I18n.tr("Ajoutez quelques aliments pour commencer.")
-                    Layout.alignment: Qt.AlignHCenter
-                }
-                ActionButton {
-                    text: I18n.tr("Ajouter un aliment")
-                    primary: true
-                    Layout.alignment: Qt.AlignHCenter
-                    onClicked: page.foodRequested(null)
+                Layout.topMargin: 48
+                title: page.filtering ? I18n.tr("Aucun aliment trouvé") : I18n.tr("Votre réserve est vide")
+                description: page.filtering ? I18n.tr("Essayez un autre nom ou une autre catégorie.") : I18n.tr("Ajoutez quelques aliments pour commencer.")
+                actionText: page.filtering ? I18n.tr("Effacer les filtres") : I18n.tr("Ajouter un aliment")
+                onActivated: {
+                    if (page.filtering) { search.clear(); page.category = "Tout"; search.forceActiveFocus(); }
+                    else page.foodRequested(null);
                 }
             }
         }

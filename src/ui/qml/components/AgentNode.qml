@@ -25,8 +25,8 @@ Button {
         color: node.selected ? "#35453d" : node.hovered ? Theme.raised : Theme.surface
         border.color: node.selected || node.activeFocus ? node.tint : Theme.border
         border.width: node.selected || node.activeFocus ? 2 : 1
-        Behavior on color { ColorAnimation { duration: 180 } }
-        Behavior on border.color { ColorAnimation { duration: 180 } }
+        Behavior on color { ColorAnimation { duration: Theme.motionDuration } }
+        Behavior on border.color { ColorAnimation { duration: Theme.motionDuration } }
     }
     contentItem: ColumnLayout {
         spacing: 8

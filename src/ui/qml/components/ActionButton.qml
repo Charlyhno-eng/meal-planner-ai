@@ -13,9 +13,9 @@ Button {
     font.pixelSize: 14
     font.weight: Font.DemiBold
     Accessible.name: text
-    scale: down ? 0.98 : 1
+    scale: down && !Theme.reducedMotion ? 0.98 : 1
     Behavior on scale {
-        NumberAnimation { duration: 90; easing.type: Easing.OutCubic }
+        NumberAnimation { duration: Theme.reducedMotion ? 0 : 90; easing.type: Easing.OutCubic }
     }
     background: Rectangle {
         radius: 10

@@ -10,7 +10,8 @@ ComboBox {
     background: Rectangle {
         radius: 9
         color: Theme.background
-        border.color: control.activeFocus ? Theme.accent : Theme.border
+        border.color: control.activeFocus || control.hovered ? Theme.accent : Theme.border
+        border.width: control.activeFocus ? 2 : 1
     }
     contentItem: Text {
         text: I18n.tr(control.displayText)

@@ -5,8 +5,11 @@ import QtQuick.Layouts
 Modal {
     id: dialog
     required property var store
+    noticeSource: store
     property var food: null
     property bool confirming: false
+    readonly property real parsedAmount: Number(amount.text.trim().replace(",", "."))
+    readonly property bool validAmount: /^[0-9]+([.,][0-9]+)?$/.test(amount.text.trim()) && parsedAmount > 0 && parsedAmount <= 100000
     title: food ? I18n.tr("Modifier l’aliment") : I18n.tr("Ajouter un aliment")
     function edit(item) {
         food = item;
@@ -28,6 +31,7 @@ Modal {
         }
         Field {
             id: name
+            objectName: "foodName"
             Layout.fillWidth: true
             placeholderText: I18n.tr("Ex. Tomates cerises")
             maximumLength: 80
@@ -43,6 +47,8 @@ Modal {
                 }
                 Field {
                     id: amount
+                    objectName: "foodAmount"
+                    maximumLength: 16
                     Layout.fillWidth: true
                     placeholderText: "500"
                     inputMethodHints: Qt.ImhFormattedNumbersOnly
@@ -60,6 +66,12 @@ Modal {
                     model: ["g", "ml", "pièce"]
                 }
             }
+        }
+        Caption {
+            objectName: "foodAmountHint"
+            Layout.fillWidth: true
+            text: I18n.tr("Saisissez une quantité entre 0 et 100 000, supérieure à zéro.")
+            color: amount.text.length > 0 && !dialog.validAmount ? Theme.danger : Theme.muted
         }
         Caption {
             text: I18n.tr("Catégorie")
@@ -97,7 +109,8 @@ Modal {
             ActionButton {
                 text: I18n.tr("Enregistrer")
                 primary: true
-                enabled: name.text.trim().length > 0 && Number(amount.text.replace(",", ".")) > 0
+                objectName: "saveFoodButton"
+                enabled: name.text.trim().length > 0 && dialog.validAmount
                 onClicked: if (dialog.store.saveFood(dialog.food ? dialog.food.id : -1, name.text, Number(
                                                          amount.text.replace(",", ".")),
                                                      unit.model[unit.currentIndex],

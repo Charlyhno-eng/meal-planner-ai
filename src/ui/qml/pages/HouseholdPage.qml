@@ -101,9 +101,9 @@ ScrollView {
                         spacing: 10
                         Caption {
                             Layout.fillWidth: true
-                            text: I18n.tr("ALIMENTATION")
+                            text: I18n.tr("Alimentation")
                             font.pixelSize: 11
-                            font.letterSpacing: 1
+                            font.weight: Font.Medium
                         }
                         Text {
                             text: page.store.settings.vegetarian ? I18n.tr("Végétarienne") : I18n.tr(
@@ -116,9 +116,9 @@ ScrollView {
                         Layout.fillWidth: true
                         spacing: 10
                         Caption {
-                            text: I18n.tr("ALIMENTS EXCLUS")
+                            text: I18n.tr("Aliments exclus")
                             font.pixelSize: 11
-                            font.letterSpacing: 1
+                            font.weight: Font.Medium
                         }
                         Text {
                             text: page.store.settings.dislikes || I18n.tr("Aucun")
@@ -140,6 +140,7 @@ ScrollView {
             }
             ActionButton {
                 text: I18n.tr("+  Inviter à un repas")
+                enabled: page.store.meals.length > 0
                 onClicked: page.guestRequested()
             }
         }
@@ -156,11 +157,12 @@ ScrollView {
                     Layout.alignment: Qt.AlignHCenter
                 }
                 Caption {
-                    text: I18n.tr("Les portions et les courses s’adaptent à vos invités.")
+                    text: page.store.meals.length ? I18n.tr("Les portions s’adaptent à vos invités. Vérifiez ensuite les ingrédients à acheter.") : I18n.tr("Planifiez un repas avant d’ajouter des invités.")
                     Layout.alignment: Qt.AlignHCenter
                 }
                 ActionButton {
                     text: I18n.tr("Ajouter des invités")
+                    enabled: page.store.meals.length > 0
                     quiet: true
                     Layout.alignment: Qt.AlignHCenter
                     onClicked: page.guestRequested()
@@ -182,6 +184,8 @@ ScrollView {
                         spacing: 6
                         Text {
                             text: guestRow.modelData.label + " · " + guestRow.modelData.title
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
                             color: Theme.text
                             font.pixelSize: 15
                             font.weight: Font.DemiBold

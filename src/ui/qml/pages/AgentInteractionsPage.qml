@@ -73,7 +73,8 @@ ScrollView {
             }
             ActionButton {
                 objectName: "agentAnimationToggle"
-                text: page.motionEnabled ? I18n.tr("Pause") : I18n.tr("Animer")
+                text: Theme.reducedMotion ? I18n.tr("Animations réduites") : page.motionEnabled ? I18n.tr("Pause") : I18n.tr("Animer")
+                enabled: !Theme.reducedMotion
                 quiet: true
                 implicitHeight: 30
                 font.pixelSize: 11
@@ -246,7 +247,7 @@ ScrollView {
                         property real progress: 0
                         readonly property var position: graph.pointAt(graph.routes[index].points, progress)
                         readonly property bool active: page.visible
-                        readonly property bool animating: active && page.motionEnabled
+                        readonly property bool animating: active && page.motionEnabled && !Theme.reducedMotion
                         x: position.x - width / 2
                         y: position.y - height / 2
                         width: 7
@@ -268,7 +269,7 @@ ScrollView {
                             duration: 2600 + pulse.index * 130
                             loops: Animation.Infinite
                             running: pulse.active
-                            paused: running && !page.motionEnabled
+                            paused: running && (!page.motionEnabled || Theme.reducedMotion)
                         }
                     }
                 }
@@ -393,7 +394,7 @@ ScrollView {
                     property: "opacity"
                     from: 0.55
                     to: 1
-                    duration: 180
+                    duration: Theme.motionDuration
                     easing.type: Easing.OutCubic
                 }
                 RowLayout {

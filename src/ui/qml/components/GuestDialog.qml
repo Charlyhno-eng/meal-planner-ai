@@ -5,6 +5,7 @@ import QtQuick.Layouts
 Modal {
     id: dialog
     required property var store
+    noticeSource: store
     title: I18n.tr("Inviter à un repas")
     onOpened: {
         count.value = 2;

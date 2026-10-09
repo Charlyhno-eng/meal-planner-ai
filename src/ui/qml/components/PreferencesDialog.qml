@@ -5,6 +5,7 @@ import QtQuick.Layouts
 Modal {
     id: dialog
     required property var store
+    noticeSource: store
     property bool vegetarian: false
     title: I18n.tr("Les goûts de votre foyer")
     ListModel { id: members }
@@ -106,7 +107,7 @@ Modal {
                     Accessible.name: I18n.tr("Aliments exclus, séparés par des virgules")
                 }
                 Caption {
-                    text: I18n.tr("Le menu sera actualisé pour tout le foyer. Les invités et les articles cochés seront réinitialisés.")
+                    text: I18n.tr("Les préférences s’appliquent à tout le foyer. Les recettes existantes doivent être compatibles. Les articles cochés seront réinitialisés.")
                     Layout.fillWidth: true
                     font.pixelSize: 12
                 }

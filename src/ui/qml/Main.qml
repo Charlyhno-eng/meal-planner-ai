@@ -13,7 +13,7 @@ ApplicationWindow {
     property bool sidebarCollapsed: false
     Connections {
         target: window.demo.assistant
-        function onModelSetupRequested() { window.currentPage = 4; }
+        function onModelSetupRequested() { window.currentPage = 4; settingsPage.showDictation(); }
     }
     onCurrentPageChanged: if (currentPage !== 5)
         demo.assistant.cancelDictation()
@@ -126,9 +126,8 @@ ApplicationWindow {
             }
             Caption {
                 visible: !window.sidebarCollapsed
-                text: I18n.tr("VOTRE QUOTIDIEN")
+                text: I18n.tr("Votre quotidien")
                 font.pixelSize: 10
-                font.letterSpacing: 1.2
                 Layout.leftMargin: 10
                 Layout.bottomMargin: 10
             }
@@ -199,10 +198,9 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 spacing: 5
                 Caption {
-                    text: I18n.tr("REPAS & COURSES À LA MAISON")
+                    text: I18n.tr("Repas et courses à la maison")
                     color: Theme.secondary
                     font.pixelSize: 10
-                    font.letterSpacing: 1.3
                 }
                 Heading {
                     text: window.pageTitles[window.currentPage]
@@ -217,7 +215,7 @@ ApplicationWindow {
             Layout.fillHeight: true
             Layout.bottomMargin: 24
             currentIndex: window.currentPage
-            onCurrentIndexChanged: pageReveal.restart()
+            onCurrentIndexChanged: if (!Theme.reducedMotion) pageReveal.restart()
             NumberAnimation {
                 id: pageReveal
                 target: pages
@@ -232,6 +230,7 @@ ApplicationWindow {
                 onConfigureRequested: planningDialog.open()
                 onRecipeRequested: mealId => recipeDialog.showRecipe(mealId)
                 onGroceriesRequested: window.currentPage = 2
+                onAssistantRequested: window.currentPage = 5
             }
             PantryPage {
                 store: window.demo
@@ -239,6 +238,8 @@ ApplicationWindow {
             }
             GroceryPage {
                 store: window.demo
+                onAssistantRequested: window.currentPage = 5
+                onPantryRequested: window.currentPage = 1
             }
             HouseholdPage {
                 store: window.demo
@@ -246,6 +247,7 @@ ApplicationWindow {
                 onGuestRequested: guestDialog.open()
             }
             SettingsPage {
+                id: settingsPage
                 store: window.demo
             }
             AssistantPage {

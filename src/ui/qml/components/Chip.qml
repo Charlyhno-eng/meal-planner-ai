@@ -3,7 +3,10 @@ import QtQuick.Controls
 
 ActionButton {
     primary: checked
-    checkable: true
+    // Selection belongs to the page state; clicking must not break its binding.
+    checkable: false
+    Accessible.checkable: true
+    Accessible.checked: checked
     implicitHeight: 34
     font.pixelSize: 12
     font.weight: Font.Medium

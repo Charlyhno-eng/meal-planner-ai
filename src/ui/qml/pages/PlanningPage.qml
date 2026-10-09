@@ -9,6 +9,7 @@ ScrollView {
     signal configureRequested
     signal recipeRequested(int mealId)
     signal groceriesRequested
+    signal assistantRequested
     clip: true
     contentWidth: availableWidth
     ColumnLayout {
@@ -28,10 +29,10 @@ ScrollView {
                     Layout.fillWidth: true
                     spacing: 8
                     Caption {
-                        text: I18n.tr("À TABLE, L’ESPRIT TRANQUILLE")
+                        text: I18n.tr("Votre prochaine cuisine")
                         color: Theme.accent
                         font.pixelSize: 11
-                        font.letterSpacing: 1.2
+                        font.weight: Font.Medium
                     }
                     Heading {
                         text: I18n.tr("Des repas à votre goût.")
@@ -66,7 +67,7 @@ ScrollView {
                 }
             }
             ActionButton {
-                text: I18n.tr("Voir les courses  →")
+                text: I18n.tr("Voir les courses")
                 quiet: true
                 onClicked: page.groceriesRequested()
             }
@@ -180,7 +181,7 @@ ScrollView {
                         RowLayout {
                             Layout.fillWidth: true
                             ActionButton {
-                                text: I18n.tr("Voir la recette  ↗")
+                                text: I18n.tr("Voir la recette")
                                 quiet: true
                                 implicitHeight: 30
                                 padding: 0
@@ -212,10 +213,14 @@ ScrollView {
                 }
             }
         }
-        Caption {
+        EmptyState {
             visible: page.store.meals.length === 0
-            text: I18n.tr("Aucun repas planifié pour le moment.")
-            Layout.bottomMargin: 8
+            Layout.fillWidth: true
+            Layout.topMargin: 24
+            title: I18n.tr("Aucun repas planifié pour le moment.")
+            description: I18n.tr("Demandez un plat à l’assistant pour créer votre première recette.")
+            actionText: I18n.tr("Planifier un repas")
+            onActivated: page.assistantRequested()
         }
     }
 }
