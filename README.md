@@ -28,6 +28,11 @@ to the existing list, so select guest meal numbers accordingly.
 Incompatible existing recipes must be removed or changed before saving new
 exclusions for those meals.
 Ask the assistant to create meals and recipes from a written request.
+Before interpreting the request, the coordinator receives an explicit list of
+household exclusions and guest exclusions scoped to their selected meals. It
+keeps the requested dishes and servings so the recipe agent can adapt them.
+If GLM returns an invalid command format, the coordinator requests one corrected
+response with validation feedback before routing or saving any actions.
 The recipe agent receives explicit exclusions for each meal before generation,
 including common ingredient sources. It creates suitable variants of requested
 dishes (for example, an egg-free tiramisu) instead of rejecting the request.

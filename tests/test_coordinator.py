@@ -254,26 +254,38 @@ def test_provider_errors_do_not_expose_credentials_or_response_body(monkeypatch,
 
 
 @pytest.mark.parametrize(
-    "body",
+    "body, expected_calls",
     [
-        "not json",
-        '{"choices":[]}',
-        json.dumps(
-            {"choices": [{"finish_reason": "length", "message": {"content": "{}"}}]}
+        ("not json", 1),
+        ('{"choices":[]}', 1),
+        (
+            json.dumps(
+                {"choices": [{"finish_reason": "length", "message": {"content": "{}"}}]}
+            ),
+            1,
         ),
-        json.dumps(
-            {"choices": [{"finish_reason": "stop", "message": {"content": "{}"}}]}
+        (
+            json.dumps(
+                {"choices": [{"finish_reason": "stop", "message": {"content": "{}"}}]}
+            ),
+            2,
         ),
     ],
 )
-def test_invalid_or_truncated_provider_output_is_rejected(monkeypatch, body):
+def test_invalid_or_truncated_provider_output_is_rejected(
+    monkeypatch, body, expected_calls
+):
+    calls = []
+
     @contextmanager
-    def respond(*args, **kwargs):
+    def respond(request, **kwargs):
+        calls.append(request)
         yield io.StringIO(body)
 
     monkeypatch.setattr("src.providers.glm.urlopen", respond)
     with pytest.raises(ValueError):
         interpret_request({"request": "test", "context": {}}, "key")
+    assert len(calls) == expected_calls
 
 
 def test_clarification_follow_up_and_stale_context(qt_app, monkeypatch, fake_recipes):

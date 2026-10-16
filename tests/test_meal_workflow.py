@@ -80,6 +80,109 @@ def test_graph_separates_agents_and_subtracts_stock(qt_app, fake_recipes):
     assert state.pantry[0]["amount"] == 60  # Planning does not consume stock.
 
 
+@pytest.mark.parametrize("scope", ["household", "member", "guest", "none"])
+def test_glm_receives_exclusions_before_interpreting_and_adapts_requested_dishes(
+    qt_app, tmp_path, monkeypatch, fake_recipes, scope
+):
+    state = DemoState(config_path=tmp_path / "config.toml")
+    foods = "oeufs, champignons"
+    assert state.setHousehold(
+        [{"name": "Alice", "foods_to_avoid": foods if scope == "member" else ""}],
+        False,
+        foods if scope == "household" else "",
+    )
+    if scope == "guest":
+        assert state.addGuestGroup(
+            "Friends", [0], [{"name": "Bob", "foods_to_avoid": foods}]
+        )
+    state.setGlmApiKey("test-key")
+    calls = []
+    actions = [
+        dict(service="meal_request", title="Tiramisu", servings=6),
+        dict(service="meal_request", title="Lasagnes", servings=2),
+    ]
+
+    @contextmanager
+    def respond(request, timeout):
+        data = json.loads(request.data)
+        payload = json.loads(data["messages"][1]["content"])
+        calls.append(payload)
+        if "request" in payload:
+            rules = payload["food_constraints"]
+            household_foods = (
+                ["oeufs", "champignons"] if scope in ("household", "member") else []
+            )
+            assert rules["household_excluded_foods"] == household_foods
+            if household_foods:
+                assert "eggs" in rules["household_excluded_terms_and_sources"]
+            if scope == "guest":
+                assert rules["household_excluded_foods"] == []
+                assert rules["guest_meal_constraints"][0]["meal_index"] == 0
+                assert rules["guest_meal_constraints"][0]["excluded_foods"] == [
+                    "oeufs",
+                    "champignons",
+                ]
+            else:
+                assert rules["guest_meal_constraints"] == []
+            if len(calls) == 1 and scope != "none":
+                # GLM puts adaptation data outside the command schema. This must
+                # be repaired without removing exclusions or losing either dish.
+                body = {"actions": actions, "excluded_foods": foods}
+            else:
+                if scope != "none":
+                    assert (
+                        payload["validation_feedback"][0]["type"] == "extra_forbidden"
+                    )
+                    assert "input" not in payload["validation_feedback"][0]
+                body = {"actions": actions}
+        else:
+            assert [meal["servings"] for meal in payload["meals"]] == [6, 2]
+            for index, rule in enumerate(payload["meal_constraints"]):
+                expected = (
+                    ["oeufs", "champignons"]
+                    if scope in ("household", "member")
+                    or scope == "guest"
+                    and index == 0
+                    else []
+                )
+                assert rule["excluded_foods"] == expected
+            body = json.loads(fake_recipes("", payload, "test-key"))
+            body["recipes"][0]["title"] = "Tiramisu sans œufs"
+        yield io.StringIO(
+            json.dumps(
+                {
+                    "choices": [
+                        {
+                            "finish_reason": "stop",
+                            "message": {"content": json.dumps(body)},
+                        }
+                    ]
+                }
+            )
+        )
+
+    from src.providers.glm import complete_json
+
+    monkeypatch.setattr("src.agents.meal_planning.agent.complete_json", complete_json)
+    monkeypatch.setattr("src.providers.glm.urlopen", respond)
+    assistant = state.assistant
+    try:
+        assistant.plan(
+            "Je veux un tiramisu pour six personnes et des lasagnes pour deux."
+        )
+        wait_for_job(assistant)
+        assert not assistant.error
+        assert len(calls) == (2 if scope == "none" else 3)
+        assert [meal["title"] for meal in state.meals] == [
+            "Tiramisu sans œufs",
+            "Lasagnes",
+        ]
+        assert [meal["baseServings"] for meal in state.meals] == [6, 2]
+        assert len(DemoState(config_path=tmp_path / "config.toml").meals) == 2
+    finally:
+        assistant.shutdown()
+
+
 def test_compound_request_uses_declared_stock_and_shares_it_once(qt_app, fake_recipes):
     state = DemoState()
     actions = [
