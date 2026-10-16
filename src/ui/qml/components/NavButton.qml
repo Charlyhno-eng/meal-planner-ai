@@ -8,8 +8,11 @@ Button {
     property bool selected: false
     property int count: 0
     property bool collapsed: false
+    implicitWidth: 48
     implicitHeight: 48
     padding: 12
+    leftPadding: 12
+    rightPadding: 12
     hoverEnabled: true
     Accessible.name: text
     ToolTip.visible: collapsed && hovered
@@ -40,28 +43,29 @@ Button {
         }
     }
     contentItem: RowLayout {
-        spacing: control.collapsed ? 0 : 10
-        Item {
-            visible: control.collapsed
-            Layout.fillWidth: true
-        }
+        spacing: navLabel.visible ? 10 : 0
+        clip: true
         AppIcon {
+            objectName: "navIcon"
             name: control.iconName
             color: control.selected ? Theme.accent : Theme.muted
-            Layout.preferredWidth: 21
-            Layout.preferredHeight: 21
+            Layout.minimumWidth: 24
+            Layout.maximumWidth: 24
+            Layout.preferredHeight: 24
         }
         Text {
-            visible: !control.collapsed
+            id: navLabel
+            visible: !control.collapsed && control.width >= 160
             text: control.text
             color: control.selected ? Theme.accent : Theme.muted
             font.pixelSize: 13
             font.weight: control.selected ? Font.DemiBold : Font.Normal
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
             elide: Text.ElideRight
         }
         Rectangle {
-            visible: !control.collapsed && control.count > 0
+            visible: navLabel.visible && control.count > 0
             implicitWidth: Math.max(22, countLabel.implicitWidth + 10)
             implicitHeight: 22
             radius: 7
@@ -73,10 +77,6 @@ Button {
                 color: control.selected ? Theme.accent : Theme.muted
                 font.pixelSize: 10
             }
-        }
-        Item {
-            visible: control.collapsed
-            Layout.fillWidth: true
         }
     }
 }

@@ -50,6 +50,9 @@ Add grocery purchases and check them off while shopping.
 Removal buttons ask for confirmation before deleting pantry items, meals, grocery
 purchases, or guests. Cancel to keep the item.
 Household settings, recipes, and grocery purchases are stored locally.
+Use the chevron at the top of the sidebar to collapse or expand navigation.
+The compact menu keeps icons aligned and buttons in place; hover over an icon
+to see its label. Interactions and Settings remain at the bottom.
 The desktop interface automatically follows the operating system’s preferred UI
 languages at startup, using the first supported language (English or French).
 If neither is supported, it uses English. No language setting is needed; any old

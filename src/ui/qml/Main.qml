@@ -64,16 +64,17 @@ ApplicationWindow {
         }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: window.sidebarCollapsed ? 12 : 18
+            anchors.margins: 12
             spacing: 8
             Item {
                 Layout.fillWidth: true
-                implicitHeight: 32
+                Layout.preferredHeight: 88
                 Button {
                     objectName: "sidebarToggle"
-                    anchors.right: parent.right
+                    x: window.sidebarCollapsed ? 8 : parent.width - width
                     width: 32
                     height: 32
+                    padding: 6
                     hoverEnabled: true
                     text: window.sidebarCollapsed ? I18n.tr("Déplier le menu") : I18n.tr("Replier le menu")
                     Accessible.name: text
@@ -90,12 +91,10 @@ ApplicationWindow {
                         color: Theme.muted
                     }
                 }
-            }
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.bottomMargin: 16
-                spacing: 10
                 Rectangle {
+                    objectName: "sidebarBrand"
+                    x: 7
+                    y: 46
                     width: 34
                     height: 34
                     radius: 11
@@ -109,27 +108,39 @@ ApplicationWindow {
                     }
                 }
                 ColumnLayout {
-                    visible: !window.sidebarCollapsed
+                    x: 50
+                    y: 46
+                    width: Math.max(0, parent.width - x)
+                    visible: !window.sidebarCollapsed && sidebar.width >= 200
                     spacing: 3
                     Text {
+                        Layout.fillWidth: true
                         text: "Meal Planner AI"
+                        elide: Text.ElideRight
                         font.pixelSize: 14
                         font.weight: Font.DemiBold
                         color: Theme.text
                     }
                     Caption {
+                        Layout.fillWidth: true
                         text: I18n.tr("Votre cuisine, connectée")
+                        elide: Text.ElideRight
                         font.pixelSize: 10
                         color: Theme.secondary
                     }
                 }
             }
-            Caption {
-                visible: !window.sidebarCollapsed
-                text: I18n.tr("Votre quotidien")
-                font.pixelSize: 10
-                Layout.leftMargin: 10
-                Layout.bottomMargin: 10
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 24
+                Caption {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 12
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: !window.sidebarCollapsed && sidebar.width >= 200
+                    text: I18n.tr("Votre quotidien")
+                    font.pixelSize: 10
+                }
             }
             Repeater {
                 model: [

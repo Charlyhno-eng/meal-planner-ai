@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import pytest
-from PySide6.QtCore import QCoreApplication, QEvent, QMetaObject, QObject, Qt
+from PySide6.QtCore import QCoreApplication, QEvent, QMetaObject, QObject, QPointF, Qt
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtTest import QTest
 from test_bootstrap import visual_child
@@ -30,6 +30,46 @@ def desktop(qt_app, tmp_path):
     engine.deleteLater()
     QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
     assert not warnings, "\n".join(warnings)
+
+
+@pytest.mark.parametrize("width", [960, 1280])
+@pytest.mark.parametrize("language", ["fr", "en"])
+def test_sidebar_alignment_survives_toggle(
+    sample_session, desktop, qt_app, width, language
+):
+    state, window = desktop
+    state.setLanguage(language)
+    window.setWidth(width)
+    positions = []
+    for collapsed in (False, True, False):
+        window.setProperty("sidebarCollapsed", collapsed)
+        QTest.qWait(220)
+        sidebar = window.findChild(QObject, "sidebar")
+        rows = []
+        for index in (5, 0, 1, 2, 3, 6, 4):
+            button = visual_child(window.contentItem(), f"nav{index}")
+            icon = visual_child(button, "navIcon")
+            icon_center = icon.mapToScene(QPointF(icon.width() / 2, icon.height() / 2))
+            top = button.mapToScene(QPointF(0, 0))
+            assert icon_center.x() == pytest.approx(36)
+            assert icon_center.y() == pytest.approx(top.y() + button.height() / 2)
+            assert top.x() >= 0
+            assert top.x() + button.width() <= sidebar.property("width")
+            assert top.y() + button.height() <= window.height() - 12
+            if rows:
+                assert top.y() >= rows[-1] + 48 + 8
+            rows.append(top.y())
+        positions.append(rows)
+        toggle = visual_child(window.contentItem(), "sidebarToggle")
+        toggle_center = toggle.mapToScene(
+            QPointF(toggle.width() / 2, toggle.height() / 2)
+        )
+        assert toggle_center.y() + toggle.height() / 2 < rows[0]
+        if collapsed:
+            assert toggle_center.x() == pytest.approx(36)
+        brand = visual_child(window.contentItem(), "sidebarBrand")
+        assert brand.mapToScene(QPointF(brand.width() / 2, 0)).x() == pytest.approx(36)
+    assert positions[0] == positions[1] == positions[2]
 
 
 def test_empty_pages_offer_working_recovery_actions(desktop, qt_app):
