@@ -14,6 +14,7 @@ from src.agents.food_preferences import (
 )
 from src.agents.grocery_list import calculate_groceries
 from src.agents.intolerance_verification import check_intolerances
+from src.domain.dietary import conflicting_terms
 from src.models.coordinator import (
     CoordinatorData,
     CoordinatorProposal,
@@ -22,7 +23,13 @@ from src.models.coordinator import (
     ShoppingItem,
 )
 from src.models.execution import MealExecution
-from src.models.household import GuestGroup, Household, HouseholdMember, excluded_terms
+from src.models.household import (
+    GuestGroup,
+    Household,
+    HouseholdMember,
+    exclusion_labels,
+    meal_guests,
+)
 from src.models.planning import (
     PlanningProposal,
     PlanningSettings,
@@ -145,6 +152,10 @@ class DemoState(QObject):
             "coordinator": self._coordinator_data.model_dump(mode="json"),
             "pantry": [item.copy() for item in self._pantry],
             "planned_meal_count": len(self.meals),
+            "catalogue_meal_count": len(self._plan),
+            "planned_meals": [
+                meal.model_dump(mode="json") for meal in self._generated_meals()
+            ],
             "planned_ingredients": [
                 item.model_dump() for item in self._planned_ingredients()
             ],
@@ -203,7 +214,8 @@ class DemoState(QObject):
         execution = MealExecution.model_validate(execution.model_dump())
         if execution.commands.clarification:
             raise ValueError("A clarification cannot be applied")
-        check_preferences(execution.meals, self._settings)
+        check_preferences(execution.meals, self._settings, len(self.meals))
+        check_intolerances(self._generated_meals(), [], self._settings, len(self._plan))
         expected = calculate_execution_groceries(
             execution.commands, execution.meals, self.planning_context()
         )
@@ -216,6 +228,7 @@ class DemoState(QObject):
                 *(a for a in execution.commands.actions if a.service == "grocery_add"),
             ],
             self._settings,
+            meal_offset=len(self.meals),
         )
         self.apply_commands(execution.commands, planned_meals=execution.meals)
 
@@ -427,27 +440,24 @@ class DemoState(QObject):
             )
         return result
 
-    def _eligible(self):
-        excluded = excluded_terms(self._settings)
+    def _eligible(self, index=None):
+        excluded = exclusion_labels(self._settings, index)
         return [
             i
             for i, recipe in enumerate(self.recipe_catalogue)
             if (not self._settings["vegetarian"] or recipe["vegetarian"])
             and not any(
-                (
-                    word in ingredient[0].casefold()
-                    or word in ENGLISH.get(ingredient[0], ingredient[0]).casefold()
-                )
-                for word in excluded
-                for ingredient in recipe["ingredients"]
+                conflicting_terms(text, excluded)
+                for name, *_ in recipe["ingredients"]
+                for text in (name, ENGLISH.get(name, name))
             )
         ]
 
     def _make_plan(self):
-        eligible = self._eligible()
+        choices = [self._eligible(index) for index in range(self._settings["count"])]
         self._plan = (
-            [eligible[i % len(eligible)] for i in range(self._settings["count"])]
-            if eligible
+            [eligible[index % len(eligible)] for index, eligible in enumerate(choices)]
+            if all(choices)
             else []
         )
 
@@ -465,6 +475,7 @@ class DemoState(QObject):
             subtitle=self.translate(recipe["subtitle"]),
             steps=[self.translate(step) for step in recipe["steps"]],
             id=index,
+            **self._meal_dietary_info(index),
             art=self._plan[index],
             label=f"{self.translate('Repas ')}{index + 1}",
             guests=guests,
@@ -490,6 +501,7 @@ class DemoState(QObject):
         servings = item.servings + guests
         return dict(
             id=len(self._plan) + index,
+            **self._meal_dietary_info(len(self._plan) + index),
             requestId=item.id,
             title=recipe.title,
             subtitle=recipe.subtitle,
@@ -690,13 +702,17 @@ class DemoState(QObject):
             )
             return False
         try:
-            check_preferences(self._generated_meals(), settings.model_dump())
+            check_preferences(
+                self._generated_meals(), settings.model_dump(), len(self._plan)
+            )
         except PreferenceConflict as exc:
             self._notify(str(exc))
             return False
         previous = self._settings
         self._settings = settings.model_dump(mode="json")
-        if self.recipe_catalogue and not self._eligible():
+        if self.recipe_catalogue and not all(
+            self._eligible(index) for index in range(self._settings["count"])
+        ):
             self._settings = previous
             self._notify("Aucune recette ne correspond à ces préférences.")
             return False
@@ -733,7 +749,7 @@ class DemoState(QObject):
     def replaceMeal(self, index):
         if not 0 <= index < len(self._plan):
             return False
-        eligible = self._eligible()
+        eligible = self._eligible(index)
         if len(eligible) < 2:
             self._notify("Aucune autre recette disponible.")
             return False
@@ -800,6 +816,15 @@ class DemoState(QObject):
         self.changed.emit()
         return True
 
+    def _meal_dietary_info(self, index):
+        return {
+            "foodsToAvoid": exclusion_labels(self._settings, index),
+            "guestNames": [
+                guest["name"] or self.translate("Personne ") + str(number + 1)
+                for number, guest in enumerate(meal_guests(self._settings, index))
+            ],
+        }
+
     def _group_count(self, index):
         return sum(
             len(group["members"])
@@ -813,19 +838,17 @@ class DemoState(QObject):
             group = GuestGroup(name=name, meals=meals, members=members)
             settings = deepcopy(self._settings)
             settings["guest_groups"].append(group.model_dump())
-            check_preferences(self._generated_meals(), settings)
-            # Guest exclusions apply throughout planning, including future recipes.
+            check_preferences(self._generated_meals(), settings, len(self._plan))
             for index in range(len(self._plan)):
                 recipe = self.recipe_catalogue[self._plan[index]]
                 if any(
-                    term in food.casefold()
-                    or term in ENGLISH.get(food, food).casefold()
-                    for term in excluded_terms(settings)
+                    conflicting_terms(text, exclusion_labels(settings, index))
                     for food, *_ in recipe["ingredients"]
+                    for text in (food, ENGLISH.get(food, food))
                 ):
                     raise ValueError("Guest preference conflict")
             self._save_household(settings)
-        except (ValueError, OSError):
+        except (ValueError, OSError, PreferenceConflict):
             self._notify(
                 "Impossible d’enregistrer les invités. "
                 "Vérifiez les préférences et les repas."

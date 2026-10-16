@@ -53,6 +53,15 @@ Modal {
                         delegate: Chip {
                             required property int index
                             objectName: "guestMeal-" + index
+                            implicitWidth: Math.min(contentItem.implicitWidth + 30, editor.availableWidth)
+                            contentItem: Text {
+                                text: parent.text
+                                font: parent.font
+                                color: parent.checked ? Theme.accentDark : Theme.text
+                                wrapMode: Text.WordWrap
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            implicitHeight: Math.max(34, contentItem.implicitHeight + 16)
                             text: dialog.store.meals[index] ? dialog.store.meals[index].label + " · " + dialog.store.meals[index].title : I18n.tr("Repas ") + (index + 1)
                             checked: dialog.selectedMeals.indexOf(index) >= 0
                             onClicked: {
@@ -98,7 +107,7 @@ Modal {
                 }
                 Caption {
                     Layout.fillWidth: true
-                    text: I18n.tr("Les aliments à éviter des invités s’appliquent à tout le planning. Les portions s’adaptent aux repas sélectionnés.")
+                    text: I18n.tr("Les préférences de ces invités et leurs portions s’appliquent uniquement aux repas sélectionnés. Les autres repas gardent les préférences du foyer.")
                 }
             }
         }

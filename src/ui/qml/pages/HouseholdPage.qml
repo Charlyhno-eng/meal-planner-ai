@@ -213,6 +213,10 @@ ScrollView {
                         Layout.fillWidth: true
                         text: groupRow.modelData.members.length + I18n.tr(" invité(s) · ") + groupRow.modelData.meals.map(i => I18n.tr("Repas ") + (i + 1)).join(", ")
                     }
+                    Caption {
+                        Layout.fillWidth: true
+                        text: I18n.tr("Préférences appliquées uniquement aux repas sélectionnés.")
+                    }
                     Repeater {
                         model: groupRow.modelData.members
                         delegate: Caption {

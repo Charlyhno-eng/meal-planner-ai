@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from src.domain.dietary import expand_terms
+
 
 class HouseholdMember(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -42,53 +44,32 @@ class Household(BaseModel):
         return self
 
 
-def excluded_terms(settings: dict) -> list[str]:
-    """Combine shared exclusions and every member's comma-separated intolerances."""
-    values = [settings.get("dislikes", "")]
-    values.extend(member["intolerances"] for member in settings.get("members", []))
-    values.extend(
-        member["intolerances"]
+def meal_guests(settings: dict, meal_index: int) -> list[dict]:
+    """Resolve attendees from the same global meal positions used by the UI."""
+    return [
+        member
         for group in settings.get("guest_groups", [])
+        if meal_index in group["meals"]
         for member in group["members"]
+    ]
+
+
+def exclusion_labels(settings: dict, meal_index: int | None = None) -> list[str]:
+    """Household exclusions always apply; guests apply only at their chosen meals."""
+    members = list(settings.get("members", []))
+    if meal_index is not None:
+        members.extend(meal_guests(settings, meal_index))
+    values = [settings.get("dislikes", "")]
+    values.extend(member.get("intolerances", "") for member in members)
+    return list(
+        dict.fromkeys(
+            word.strip()
+            for value in values
+            for word in value.split(",")
+            if word.strip()
+        )
     )
-    terms = {word.strip().casefold() for value in values for word in value.split(",")}
-    terms.discard("")
-    # Common intolerance labels also exclude their usual ingredient sources.
-    sources = {
-        "gluten": (
-            "blé",
-            "wheat",
-            "orge",
-            "barley",
-            "seigle",
-            "rye",
-            "farine",
-            "flour",
-            "pain",
-            "bread",
-            "pâtes",
-            "pasta",
-            "semoule",
-            "couscous",
-            "biscuit",
-        ),
-        "lactose": (
-            "lait",
-            "milk",
-            "crème",
-            "cream",
-            "beurre",
-            "butter",
-            "fromage",
-            "cheese",
-            "yaourt",
-            "yogurt",
-            "mascarpone",
-            "feta",
-            "parmesan",
-        ),
-    }
-    for label, ingredients in sources.items():
-        if label in terms:
-            terms.update(ingredients)
-    return sorted(terms)
+
+
+def excluded_terms(settings: dict, meal_index: int | None = None) -> list[str]:
+    return expand_terms(exclusion_labels(settings, meal_index))

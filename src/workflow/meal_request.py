@@ -7,7 +7,7 @@ from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from src.agents.food_preferences import check_preferences
+from src.agents.food_preferences.agent import preference_conflicts
 from src.agents.grocery_list import calculate_groceries
 from src.agents.intolerance_verification import check_intolerances
 from src.agents.meal_planning import plan_meals
@@ -27,6 +27,8 @@ class MealWorkflowState(TypedDict, total=False):
     commands: CoordinatorProposal
     meals: list[RequestedMeal]
     groceries: list[GroceryRequirement]
+    adaptation_attempts: int
+    conflicts: list[dict]
     result: MealExecution
 
 
@@ -89,7 +91,13 @@ def build_meal_workflow(
         report("GLM : envoi de votre demande et du contexte, attente de son analyse…")
         result = coordinator.invoke(state, {"recursion_limit": 60})
         report("GLM a répondu : votre demande a été structurée et validée.")
-        return {"commands": result["proposal"], "meals": [], "groceries": []}
+        return {
+            "commands": result["proposal"],
+            "meals": [],
+            "groceries": [],
+            "adaptation_attempts": 0,
+            "conflicts": [],
+        }
 
     def route(state):
         if state["commands"].clarification:
@@ -113,8 +121,79 @@ def build_meal_workflow(
         report(
             "Préférences : vérification des recettes et des aliments exclus du foyer…"
         )
-        check_preferences(state["meals"], state["context"]["settings"])
-        return {}
+        return {
+            "conflicts": preference_conflicts(
+                state["meals"],
+                state["context"]["settings"],
+                state["context"].get("planned_meal_count", 0),
+            )
+        }
+
+    def preference_route(state):
+        if not state["conflicts"]:
+            return "grocery_list"
+        return (
+            "adapt_recipes" if state["adaptation_attempts"] < 2 else "ask_alternative"
+        )
+
+    def adapt(state):
+        report(
+            "Adaptation : remplacement des ingrédients incompatibles "
+            "dans les repas concernés…"
+        )
+        offset = state["context"].get("planned_meal_count", 0)
+        requests = [a for a in state["commands"].actions if a.service == "meal_request"]
+        indices = [issue["meal_index"] for issue in state["conflicts"]]
+        feedback = [
+            dict(
+                issue,
+                rejected_recipe=state["meals"][
+                    issue["meal_index"] - offset
+                ].recipe.model_dump(),
+            )
+            for issue in state["conflicts"]
+        ]
+        repaired = plan_meals(
+            [requests[index - offset] for index in indices],
+            state["context"],
+            api_key,
+            reason=recipe_reason,
+            meal_indices=indices,
+            feedback=feedback,
+        )
+        meals = list(state["meals"])
+        for index, meal in zip(indices, repaired, strict=True):
+            meals[index - offset] = meal
+        return {"meals": meals, "adaptation_attempts": state["adaptation_attempts"] + 1}
+
+    def ask_alternative(state):
+        vegetarian = (
+            "vegetarian"
+            if state["context"].get("language", "fr") == "en"
+            else "végétarien"
+        )
+        details = "; ".join(
+            f"{issue['meal_index'] + 1}: {issue['title']} "
+            f"({', '.join(issue['excluded_foods_found']) or vegetarian})"
+            for issue in state["conflicts"]
+        )
+        # Clarifications share the coordinator's 1,000-character limit, including
+        # batches with many incompatible dishes or long food names.
+        details = details[:500]
+        question = (
+            "I could not produce a compatible variant after two adaptations. "
+            f"Meals to adapt: {details}. Which alternative dish would you like? "
+            "Your food exclusions are kept. No changes have been saved."
+            if state["context"].get("language", "fr") == "en"
+            else "Je n’ai pas obtenu de variante compatible après deux adaptations. "
+            f"Repas à adapter : {details}. Quel autre plat souhaitez-vous ? "
+            "Vos exclusions sont conservées. Aucun changement n’a été enregistré."
+        )
+        return {
+            "commands": CoordinatorProposal(clarification=question),
+            "meals": [],
+            "groceries": [],
+        }
 
     def groceries(state):
         report(
@@ -169,9 +248,19 @@ def build_meal_workflow(
             if action.service == "grocery_add"
         ]
         check_intolerances(
+            [
+                RequestedMeal.model_validate(meal)
+                for meal in state["context"].get("planned_meals", [])
+            ],
+            [],
+            state["context"]["settings"],
+            meal_offset=state["context"].get("catalogue_meal_count", 0),
+        )
+        check_intolerances(
             state["meals"],
             [*state["groceries"], *purchases],
             state["context"]["settings"],
+            meal_offset=state["context"].get("planned_meal_count", 0),
         )
         return {}
 
@@ -189,6 +278,8 @@ def build_meal_workflow(
         ("coordinator", coordinate),
         ("meal_planning", planning),
         ("food_preferences", preferences),
+        ("adapt_recipes", adapt),
+        ("ask_alternative", ask_alternative),
         ("grocery_list", groceries),
         ("intolerance_verification", verify_intolerances),
         ("finish", finish),
@@ -197,7 +288,9 @@ def build_meal_workflow(
     graph.add_edge(START, "coordinator")
     graph.add_conditional_edges("coordinator", route)
     graph.add_edge("meal_planning", "food_preferences")
-    graph.add_edge("food_preferences", "grocery_list")
+    graph.add_conditional_edges("food_preferences", preference_route)
+    graph.add_edge("adapt_recipes", "food_preferences")
+    graph.add_edge("ask_alternative", "finish")
     graph.add_conditional_edges(
         "grocery_list",
         lambda state: (

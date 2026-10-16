@@ -13,6 +13,7 @@ ScrollView {
     property bool clearingRequest: false
     readonly property bool compact: height < 680
     signal planningRequested
+    signal foodRequested
     signal pantryRequested
     signal groceriesRequested
     clip: true
@@ -69,6 +70,33 @@ ScrollView {
             Caption {
                 text: I18n.tr("Décrivez un repas à préparer, un achat à ajouter ou les aliments disponibles.")
                 Layout.fillWidth: true
+            }
+        }
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 6
+            readonly property string householdFoods: [page.store.settings.dislikes].concat(page.store.settings.members.map(member => member.intolerances)).filter(value => value.length > 0).join(", ")
+            visible: householdFoods.length > 0 || page.store.settings.guest_groups.length > 0
+            Caption {
+                Layout.fillWidth: true
+                color: Theme.accent
+                text: I18n.tr("Les recettes sont adaptées automatiquement aux préférences de chaque repas.")
+            }
+            Caption {
+                objectName: "householdDietarySummary"
+                Layout.fillWidth: true
+                visible: parent.householdFoods.length > 0
+                text: I18n.tr("Tous les repas — aliments à éviter : ") + parent.householdFoods
+            }
+            Repeater {
+                model: page.store.settings.guest_groups
+                delegate: Caption {
+                    required property var modelData
+                    required property int index
+                    objectName: "guestDietarySummary-" + index
+                    Layout.fillWidth: true
+                    text: (modelData.name || I18n.tr("Les invités")) + " · " + modelData.meals.map(i => I18n.tr("Repas ") + (i + 1)).join(", ") + " · " + modelData.members.map(member => (member.name || I18n.tr("Les invités")) + (member.intolerances ? " : " + member.intolerances : "")).join(" ; ")
+                }
             }
         }
         RowLayout {
@@ -134,6 +162,7 @@ ScrollView {
                         }
                         Rectangle {
                             id: editor
+                            visible: card.index !== 1
                             objectName: card.modelData.name + "Editor"
                             Layout.fillWidth: true
                             Layout.fillHeight: true
@@ -275,8 +304,31 @@ ScrollView {
                                 }
                             }
                         }
+                        ColumnLayout {
+                            visible: card.index === 1
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            spacing: 12
+                            Caption {
+                                Layout.fillWidth: true
+                                text: I18n.tr("Renseignez les quantités dès l’ajout : poids total ou nombre de boîtes et poids par boîte.")
+                            }
+                            Caption {
+                                Layout.fillWidth: true
+                                text: I18n.tr("Exemple : 2 pots de mascarpone de 250 g = 500 g en réserve.")
+                            }
+                            ActionButton {
+                                objectName: card.index === 1 ? "addPantryFoodButton" : ""
+                                Layout.fillWidth: true
+                                text: I18n.tr("Ajouter un aliment")
+                                primary: true
+                                onClicked: page.foodRequested()
+                            }
+                            Item { Layout.fillHeight: true }
+                        }
                         ActionButton {
                             id: example
+                            visible: card.index !== 1
                             objectName: "requestExample" + card.modelData.exampleIndex
                             text: I18n.tr("Insérer un exemple")
                             quiet: true

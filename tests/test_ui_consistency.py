@@ -226,3 +226,47 @@ def test_removal_requires_confirmation(
     QMetaObject.invokeMethod(confirm, "clicked")
     qt_app.processEvents()
     assert remaining() == before - 1
+
+
+@pytest.mark.parametrize("unit_index,unit", [(0, "g"), (1, "ml")])
+def test_packaged_pantry_entry_saves_measured_total(desktop, qt_app, unit_index, unit):
+    state, window = desktop
+    button = visual_child(window.contentItem(), "addPantryFoodButton")
+    QMetaObject.invokeMethod(button, "clicked")
+    dialog = window.findChild(QObject, "foodDialog")
+    assert dialog.property("visible")
+    window.findChild(QObject, "foodName").setProperty("text", "Mascarpone")
+    mode = window.findChild(QObject, "foodQuantityMode")
+    mode.setProperty("currentIndex", 1)
+    count = window.findChild(QObject, "foodPackageCount")
+    amount = window.findChild(QObject, "foodAmount")
+    unit_field = window.findChild(QObject, "foodUnit")
+    unit_field.setProperty("currentIndex", unit_index)
+    amount.setProperty("text", "250")
+    save = visual_child(dialog.property("contentItem"), "saveFoodButton")
+    for value in ("", "0", "-2", "2.5", "abc", "401"):
+        count.setProperty("text", value)
+        qt_app.processEvents()
+        assert not save.property("enabled"), value
+    count.setProperty("text", "2")
+    qt_app.processEvents()
+    assert save.property("enabled")
+    total = window.findChild(QObject, "foodPackageTotal")
+    assert "500" in total.property("text")
+    assert unit in total.property("text")
+    assert save.mapToScene(save.boundingRect().bottomRight()).y() <= window.height()
+    QMetaObject.invokeMethod(save, "clicked")
+    assert not dialog.property("visible")
+    assert state.pantry[0]["amount"] == 500
+    assert state.pantry[0]["unit"] == unit
+    assert not state.assistant.busy
+    # Editing stored stock shows the total, without multiplying it again.
+    QTest.qWait(200)
+    dialog.setProperty("food", state.pantry[0])
+    QMetaObject.invokeMethod(dialog, "open")
+    qt_app.processEvents()
+    QTest.qWait(200)
+    assert mode.property("currentIndex") == 0
+    assert amount.property("text") == "500"
+    QMetaObject.invokeMethod(save, "clicked")
+    assert state.pantry[0]["amount"] == 500

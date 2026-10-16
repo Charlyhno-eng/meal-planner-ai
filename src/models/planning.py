@@ -5,7 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.models.household import GuestGroup, HouseholdMember, excluded_terms
+from src.domain.dietary import conflicting_terms
+from src.models.household import GuestGroup, HouseholdMember, exclusion_labels
 
 
 class PlanningSettings(BaseModel):
@@ -69,16 +70,16 @@ class PlanningProposal(BaseModel):
 
 def validate_recipes(proposal: PlanningProposal, recipes: list[dict], english: dict):
     """Reject unknown recipes and exclusions independently of the LLM."""
-    excluded = excluded_terms(proposal.settings.model_dump())
-    for recipe_id in proposal.recipe_ids:
+    for index, recipe_id in enumerate(proposal.recipe_ids):
+        excluded = exclusion_labels(proposal.settings.model_dump(), index)
         if not 0 <= recipe_id < len(recipes):
             raise ValueError("Unknown recipe")
         recipe = recipes[recipe_id]
         if proposal.settings.vegetarian and not recipe["vegetarian"]:
             raise ValueError("Recipe is not vegetarian")
         if any(
-            word in name.casefold() or word in english.get(name, name).casefold()
+            conflicting_terms(text, excluded)
             for name, *_ in recipe["ingredients"]
-            for word in excluded
+            for text in (name, english.get(name, name))
         ):
             raise ValueError("Recipe contains an excluded ingredient")

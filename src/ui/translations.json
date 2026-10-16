@@ -427,5 +427,22 @@
   "Sélectionnez les repas de présence": "Select the meals they will attend",
   " repas sélectionné(s)": " selected meal(s)",
   "Les aliments à éviter des invités s’appliquent à tout le planning. Les portions s’adaptent aux repas sélectionnés.": "Guest food exclusions apply to the entire plan. Portions adjust for selected meals.",
-  "Impossible d’enregistrer les invités. Vérifiez les préférences et les repas.": "Unable to save guests. Check preferences and meals."
+  "Impossible d’enregistrer les invités. Vérifiez les préférences et les repas.": "Unable to save guests. Check preferences and meals.",
+  "Les préférences de ces invités et leurs portions s’appliquent uniquement aux repas sélectionnés. Les autres repas gardent les préférences du foyer.": "These guests’ preferences and portions apply only to the selected meals. Other meals keep the household preferences.",
+  "Invités à ce repas : ": "Guests at this meal: ",
+  "Aliments à éviter pour ce repas : ": "Foods to avoid for this meal: ",
+  "Les recettes sont adaptées automatiquement aux préférences de chaque repas.": "Recipes automatically adapt to each meal’s preferences.",
+  "Tous les repas — aliments à éviter : ": "Every meal — foods to avoid: ",
+  "Préférences appliquées uniquement aux repas sélectionnés.": "Preferences apply only to the selected meals.",
+  "Adaptation : remplacement des ingrédients incompatibles dans les repas concernés…": "Adapting: replacing incompatible ingredients in the affected meals…",
+  "Quantité totale": "Total quantity",
+  "Boîtes / pots / paquets": "Boxes / tubs / packets",
+  "Nombre de boîtes": "Number of packages",
+  "Par boîte": "Per package",
+  "Poids ou volume par boîte": "Weight or volume per package",
+  "Indiquez le poids ou le volume d’une boîte (ex. 2 pots de 250 g = 500 g).": "Enter the weight or volume of one package (e.g. 2 tubs of 250 g = 500 g).",
+  "Pour les aliments emballés, choisissez Boîtes / pots / paquets. Les pièces servent aux aliments comptables, comme les œufs.": "For packaged foods, choose Boxes / tubs / packets. Use pieces for countable foods such as eggs.",
+  "Quantité totale : ": "Total quantity: ",
+  "Renseignez les quantités dès l’ajout : poids total ou nombre de boîtes et poids par boîte.": "Enter quantities when adding food: total weight or number of packages and weight per package.",
+  "Exemple : 2 pots de mascarpone de 250 g = 500 g en réserve.": "Example: 2 tubs of mascarpone at 250 g each = 500 g in your pantry."
 }

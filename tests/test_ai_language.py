@@ -52,7 +52,8 @@ def test_both_agents_receive_explicit_language_policy(
         context,
         "key",
     )
-    assert meals[1].title == (
+    assert meals[1].title == "Lasagnes aux légumes"
+    assert meals[1].recipe.title == (
         "Vegetable lasagne" if language == "en" else "Lasagnes aux légumes"
     )
     for system in calls:

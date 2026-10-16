@@ -9,7 +9,6 @@ import pytest
 from pydantic import ValidationError
 from PySide6.QtTest import QTest
 
-from src.agents.food_preferences import PreferenceConflict
 from src.models.coordinator import CoordinatorProposal, Period
 from src.providers.glm import CoordinatorUnavailable
 from src.ui.demo import DemoState
@@ -106,12 +105,16 @@ def test_compound_request_uses_declared_stock_and_shares_it_once(qt_app, fake_re
 
 
 @pytest.mark.parametrize("excluded", ["mascarpone", "Sucre", "sugar"])
-def test_excluded_ingredient_rejects_entire_batch(qt_app, fake_recipes, excluded):
+def test_persistent_exclusion_conflict_asks_alternative_without_saving(
+    qt_app, fake_recipes, excluded
+):
     state = DemoState()
     state.configure("2026-10-07", 7, 7, 2, False, excluded)
     before = state.planning_context()
-    with pytest.raises(PreferenceConflict, match="aliment exclu"):
-        result_for(state, fake_recipes)
+    result = result_for(state, fake_recipes)
+    assert result.commands.clarification
+    assert "Quel autre plat" in result.commands.clarification
+    assert result.meals == result.groceries == []
     assert state.planning_context() == before
     assert state.meals == state.groceries == []
 
@@ -120,7 +123,7 @@ def test_excluded_ingredient_rejects_entire_batch(qt_app, fake_recipes, excluded
     "change",
     [
         {"servings": 3},
-        {"title": "A different meal"},
+        {"title": ""},
         {"ingredients": []},
         {"steps": [" "]},
         {
@@ -161,8 +164,12 @@ def test_vegetarian_setting_is_checked_after_generation(qt_app, fake_recipes):
         coordinator_reason=lambda state: {"proposal": {"actions": [meal_action()]}},
         recipe_reason=incompatible,
     )
-    with pytest.raises(PreferenceConflict, match="végétarien"):
-        graph.invoke({"request": "Tiramisu", "context": state.planning_context()})
+    result = graph.invoke({"request": "Tiramisu", "context": state.planning_context()})[
+        "result"
+    ]
+    assert result.commands.clarification
+    assert "végétarien" in result.commands.clarification
+    assert result.meals == result.groceries == []
     assert state.meals == []
 
 

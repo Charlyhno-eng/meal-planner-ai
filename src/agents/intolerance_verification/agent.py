@@ -3,9 +3,10 @@
 from collections.abc import Iterable
 
 from src.agents.food_preferences import PreferenceConflict
+from src.domain.dietary import conflicting_terms
 from src.domain.foods import food_terms
 from src.models.coordinator import GroceryAdd, RequestedMeal, ShoppingItem
-from src.models.household import excluded_terms
+from src.models.household import exclusion_labels
 from src.models.recipes import Ingredient
 
 
@@ -17,27 +18,33 @@ def check_intolerances(
     meals: Iterable[RequestedMeal],
     groceries: Iterable[Ingredient | ShoppingItem | GroceryAdd],
     settings: dict,
+    meal_offset: int = 0,
 ) -> None:
     """Reject conflicts, including recipe ingredients already covered by stock.
 
     Use the shared French/English vocabulary and gluten/lactose source mapping.
     Legacy member intolerances and shared food exclusions are both checked.
     """
-    excluded = excluded_terms(settings)
-    if not excluded:
-        return
-    texts = []
-    for meal in meals:
+
+    def verify(texts, excluded):
+        if any(conflicting_terms(text, excluded) for text in texts):
+            raise IntoleranceConflict(
+                "Les recettes ou la liste de courses contiennent "
+                "un aliment incompatible "
+                "avec les intolérances du foyer. Précisez une variante et réessayez."
+            )
+
+    for index, meal in enumerate(meals, meal_offset):
         if meal.recipe is None:
             continue
         recipe = meal.recipe
-        texts.extend([recipe.title, recipe.subtitle, *recipe.steps])
+        texts = [recipe.title, recipe.subtitle, *recipe.steps]
         for ingredient in recipe.ingredients:
             texts.extend(food_terms(ingredient.name))
-    for item in groceries:
-        texts.extend(food_terms(item.name))
-    if any(term in text.casefold() for term in excluded for text in texts):
-        raise IntoleranceConflict(
-            "Les recettes ou la liste de courses contiennent un aliment incompatible "
-            "avec les intolérances du foyer. Précisez une variante et réessayez."
-        )
+        verify(texts, exclusion_labels(settings, index))
+    # Merged groceries serve several meals. Guest restrictions are checked on the
+    # originating recipes, never globally against ingredients for other meals.
+    verify(
+        [text for item in groceries for text in food_terms(item.name)],
+        exclusion_labels(settings),
+    )

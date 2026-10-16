@@ -50,6 +50,18 @@ Modal {
                     text: dialog.meal && dialog.meal.vegetarian ? I18n.tr("Végétarien") : ""
                 }
             }
+            Caption {
+                objectName: "recipeGuests"
+                Layout.fillWidth: true
+                visible: !!dialog.meal && dialog.meal.guestNames.length > 0
+                text: I18n.tr("Invités à ce repas : ") + (dialog.meal ? dialog.meal.guestNames.join(", ") : "")
+            }
+            Caption {
+                objectName: "recipeExclusions"
+                Layout.fillWidth: true
+                visible: !!dialog.meal && dialog.meal.foodsToAvoid.length > 0
+                text: I18n.tr("Aliments à éviter pour ce repas : ") + (dialog.meal ? dialog.meal.foodsToAvoid.join(", ") : "")
+            }
             RowLayout {
                 visible: !!dialog.meal && !!dialog.meal.requestId
                 Layout.fillWidth: true

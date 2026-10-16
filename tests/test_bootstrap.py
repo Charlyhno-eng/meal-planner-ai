@@ -250,16 +250,11 @@ def test_home_shortcuts_and_live_summaries(qt_app, tmp_path, language, width, he
         assert pantry.property("count") == len(demo.pantry)
         assert groceries.property("count") == len(pending)
 
-        # All three editors sit side by side, with their controls on screen.
+        # Meal and grocery editors keep their controls on screen.
         previous_right = 0
         field_top = None
         for name, send_name, mic_name in (
             ("planningRequest", "generatePlanButton", "dictationButton"),
-            (
-                "pantryRequest",
-                "pantryRequestSendButton",
-                "pantryRequestDictationButton",
-            ),
             (
                 "groceryRequest",
                 "groceryRequestSendButton",
@@ -280,14 +275,12 @@ def test_home_shortcuts_and_live_summaries(qt_app, tmp_path, language, width, he
                 assert position.x() + control.width() <= width - 26
             assert not visual_child(window.contentItem(), send_name).property("enabled")
         before = demo.planning_context()
-        click(visual_child(window.contentItem(), "requestExample2"))
-        request = visual_child(window.contentItem(), "pantryRequest")
-        send = visual_child(window.contentItem(), "pantryRequestSendButton")
-        assert request.property("text") == demo.translate("J’ai 500 g de riz.")
-        assert request.property("activeFocus")
-        assert send.property("enabled")
+        click(visual_child(window.contentItem(), "addPantryFoodButton"))
+        dialog = window.findChild(QObject, "foodDialog")
+        assert dialog.property("visible")
         assert not demo.assistant.busy
         assert demo.planning_context() == before
+        QTest.keyClick(window, Qt.Key_Escape)
 
         assert demo.addIngredientToGroceries(0, 0)
         demo.saveFood(-1, "Quinoa", 300, "g", "Épicerie")
@@ -310,7 +303,7 @@ def test_home_shortcuts_and_live_summaries(qt_app, tmp_path, language, width, he
             )
             QTest.keyClick(window, Qt.Key_1, Qt.ControlModifier)
             QTest.qWait(200)
-        assert request.property("text") == demo.translate("J’ai 500 g de riz.")
+        assert not dialog.property("visible")
         assert not warnings, "\n".join(warnings)
     finally:
         window.close()

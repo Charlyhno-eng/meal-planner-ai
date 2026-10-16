@@ -252,6 +252,7 @@ ApplicationWindow {
             }
             AssistantPage {
                 store: window.demo
+                onFoodRequested: foodDialog.edit(null)
                 onPlanningRequested: window.currentPage = 0
                 onPantryRequested: window.currentPage = 1
                 onGroceriesRequested: window.currentPage = 2

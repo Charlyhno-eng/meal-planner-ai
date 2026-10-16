@@ -6,11 +6,12 @@ from typing import TypedDict
 from langgraph.graph import END, START, StateGraph
 
 from src.agents.coordinator import interpret_request
+from src.domain.dietary import conflicting_terms
 from src.models.coordinator import (
     CoordinatorProposal,
     Period,
 )
-from src.models.household import excluded_terms
+from src.models.household import exclusion_labels
 from src.ui.i18n import ENGLISH, canonical_food
 
 
@@ -47,7 +48,7 @@ def build_coordinator_workflow(api_key: str = "", reason=None):
             raw.model_dump() if isinstance(raw, CoordinatorProposal) else raw
         )
         actions = []
-        excluded = excluded_terms(state["context"]["settings"])
+        excluded = exclusion_labels(state["context"]["settings"])
         for action in proposal.actions:
             values = action.model_dump()
             if action.service != "pantry_set":
@@ -55,10 +56,12 @@ def build_coordinator_workflow(api_key: str = "", reason=None):
             if action.service != "meal_request":
                 values["name"] = canonical_food(action.name)
             if action.service == "grocery_add" and any(
-                word in action.name.casefold()
-                or word in canonical_food(action.name).casefold()
-                or word in ENGLISH.get(values["name"], values["name"]).casefold()
-                for word in excluded
+                conflicting_terms(text, excluded)
+                for text in (
+                    action.name,
+                    values["name"],
+                    ENGLISH.get(values["name"], values["name"]),
+                )
             ):
                 raise ValueError("Purchase contains an excluded food")
             actions.append(values)

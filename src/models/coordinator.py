@@ -101,11 +101,10 @@ class RequestedMeal(CommandModel):
 
     @model_validator(mode="after")
     def matching_recipe(self):
-        if self.recipe and (
-            self.recipe.servings != self.servings
-            or self.recipe.title.casefold() != self.title.casefold()
-        ):
-            raise ValueError("Recipe differs from the requested meal")
+        # Keep the original dish request even when a compatible variant is renamed
+        # or translated. Servings still belong to the deterministic request.
+        if self.recipe and self.recipe.servings != self.servings:
+            raise ValueError("Recipe differs from the requested servings")
         return self
 
 

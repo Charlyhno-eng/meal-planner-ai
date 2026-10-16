@@ -238,9 +238,7 @@ def test_home_dictation_and_automatic_application(qt_app, monkeypatch, fake_reci
     try:
         assert window.property("currentPage") == 5
         request = visual_child(window.contentItem(), "planningRequest")
-        pantry = visual_child(window.contentItem(), "pantryRequest")
         groceries = visual_child(window.contentItem(), "groceryRequest")
-        pantry.setProperty("text", "500 g de riz")
         groceries.setProperty("text", "Trois pommes")
         request.setProperty("text", "Deux repas")
         assistant.transcribed.emit("pour trois personnes")
@@ -273,7 +271,6 @@ def test_home_dictation_and_automatic_application(qt_app, monkeypatch, fake_reci
         assert demo.meals[-1]["servings"] == 6
         assert demo.meals[-1]["title"] == "Tiramisu"
         assert request.property("text") == ""
-        assert pantry.property("text") == "500 g de riz"
         assert groceries.property("text") == "Trois pommes"
         assert assistant.completedActions
         assert demo.settings == before

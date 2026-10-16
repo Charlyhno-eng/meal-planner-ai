@@ -4,13 +4,14 @@
 
 Meal Planner AI helps households plan meals and prepare grocery lists.
 Add pantry items to track food already available at home.
-For packaged foods, tell the assistant the package size or total weight/volume
-(for example, two 250 g tubs of mascarpone means 500 g). It asks for a size
-rather than assuming a standard package. If existing pantry stock is in pieces
+Use Add food in My pantry on the assistant screen or in the Pantry page.
+Enter a total quantity, or choose Boxes / tubs / packets and enter the package
+count and weight/volume per package. The form shows and saves the calculated
+total (for example, two 250 g tubs of mascarpone means 500 g), without an AI call.
+Use pieces for countable foods such as eggs. If existing pantry stock is in pieces
 but a recipe needs grams or millilitres, planning asks for clarification before
 saving meals or purchases when that stock could cover a shortfall. Reply with
 the size or total quantity; the assistant uses the original request to continue.
-Naturally countable foods such as eggs can still be recorded in pieces.
 Set the planning period and household size for your meals.
 Record guests and dietary preferences for the household.
 In Household, use Edit to set the number of residents, add people, and enter each
@@ -20,9 +21,20 @@ Add guest groups even before generating meals. Select the meal numbers each grou
 will attend and enter each guest’s name and foods to avoid. Repeat for different
 groups during the week. Groups are saved locally; selected meal numbers refer to
 positions in the meal list. Their portions are added only to those meals, and their
-food exclusions apply to the entire planning session. Incompatible existing
-recipes must be removed or changed before saving new exclusions.
+food exclusions apply only to those meals. Resident preferences and shared
+exclusions apply to every meal. The assistant shows these scopes before planning;
+each recipe shows its guests and applicable exclusions. New requests append meals
+to the existing list, so select guest meal numbers accordingly.
+Incompatible existing recipes must be removed or changed before saving new
+exclusions for those meals.
 Ask the assistant to create meals and recipes from a written request.
+The recipe agent receives explicit exclusions for each meal before generation,
+including common ingredient sources. It creates suitable variants of requested
+dishes (for example, an egg-free tiramisu) instead of rejecting the request.
+If verification finds a conflict, only the affected recipes are regenerated,
+with specific feedback, up to two times. The grocery list is then recalculated.
+If no compatible variant is produced, the assistant asks for an alternative dish;
+no incompatible recipe or partial batch is saved. Exclusions remain in force.
 Review recipes and see which ingredients are available or need buying.
 A deterministic verification agent checks proposed recipes and grocery requirements
 against the household foods to avoid before saving.
