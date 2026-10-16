@@ -27,6 +27,12 @@ ColumnLayout {
             }
         }
         ActionButton {
+            objectName: "finishGroceriesButton"
+            text: I18n.tr("Terminer les courses")
+            enabled: page.completed > 0
+            onClicked: page.store.finishGroceries()
+        }
+        ActionButton {
             text: I18n.tr("Copier la liste")
             enabled: page.shopping.length > 0
             onClicked: page.store.copyGroceries()
@@ -230,7 +236,7 @@ ColumnLayout {
             }
             Caption {
                 visible: page.displayed.length > 0
-                text: page.showAvailable ? I18n.tr("Quantités nécessaires aux repas, couvertes par votre réserve.") : I18n.tr("Achats ajoutés explicitement. Cocher un article ne modifie pas votre réserve.")
+                text: page.showAvailable ? I18n.tr("Quantités nécessaires aux repas, couvertes par votre réserve.") : I18n.tr("Terminez les courses pour ajouter les articles cochés à votre réserve.")
                 Layout.topMargin: 12
                 Layout.bottomMargin: 12
             }

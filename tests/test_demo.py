@@ -105,6 +105,57 @@ def test_checking_copy_and_replacing_a_meal(qt_app):
 pytestmark = pytest.mark.usefixtures("sample_session")
 
 
+def test_finish_groceries_transfers_only_checked_items_once():
+    demo = DemoState()
+    demo.configure("2026-10-07", 1, 1, 2, False, "")
+    assert demo.saveFood(-1, "Quinoa", 20, "g", "Épicerie")
+    assert demo.addIngredientToGroceries(0, 0)
+    assert demo.addIngredientToGroceries(0, 1)
+    purchase = grocery(demo, "Quinoa")
+    remaining = [item for item in demo.groceries if item != purchase]
+    demo.toggleGrocery(purchase["id"])
+    demo.finishGroceries()
+    assert demo.groceries == remaining
+    stock = next(item for item in demo._pantry if item["name"] == "Quinoa")
+    assert stock["amount"] == 160
+    assert demo.meals[0]["ingredients"][0]["inPantry"]
+    demo.finishGroceries()
+    assert stock["amount"] == 160
+
+
+def test_finish_groceries_creates_stock_with_separate_units():
+    demo = DemoState()
+    demo.configure("2026-10-07", 1, 1, 2, False, "")
+    assert demo.saveFood(-1, "Quinoa", 20, "ml", "Épicerie")
+    assert demo.addIngredientToGroceries(0, 0)
+    demo.toggleGrocery(grocery(demo, "Quinoa")["id"])
+    demo.finishGroceries()
+    stock = [item for item in demo._pantry if item["name"] == "Quinoa"]
+    assert {(item["unit"], item["amount"]) for item in stock} == {
+        ("ml", 20),
+        ("g", 160),
+    }
+    assert len({item["id"] for item in demo._pantry}) == len(demo._pantry)
+    assert demo.groceries == []
+
+
+def test_finish_groceries_save_failure_preserves_state(monkeypatch):
+    demo = DemoState()
+    demo.configure("2026-10-07", 1, 1, 2, False, "")
+    assert demo.addIngredientToGroceries(0, 0)
+    demo.toggleGrocery(grocery(demo, "Quinoa")["id"])
+    previous = demo.planning_context()
+    groceries = demo.groceries
+
+    def fail_save(data):
+        raise OSError("Disk full")
+
+    monkeypatch.setattr(demo, "_save_coordinator", fail_save)
+    demo.finishGroceries()
+    assert demo.planning_context() == previous
+    assert demo.groceries == groceries
+
+
 def test_meal_count_is_independent_of_period_and_guests_follow_meal_ids():
     demo = DemoState()
     assert demo.configure("2026-10-07", 1, 10, 2, False, "")

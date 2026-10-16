@@ -58,6 +58,39 @@ def test_empty_pages_offer_working_recovery_actions(desktop, qt_app):
     assert empty.property("actionText") == "Add purchases"
 
 
+def test_finish_shopping_button_transfers_checked_purchase(desktop, qt_app):
+    from src.models.coordinator import CoordinatorProposal
+
+    state, window = desktop
+    state.apply_commands(
+        CoordinatorProposal.model_validate(
+            {
+                "actions": [
+                    {
+                        "service": "grocery_add",
+                        "name": "Quinoa",
+                        "amount": 120,
+                        "unit": "g",
+                        "category": "Épicerie",
+                    }
+                ]
+            }
+        )
+    )
+    window.setProperty("currentPage", 2)
+    qt_app.processEvents()
+    button = visual_child(window.contentItem(), "finishGroceriesButton")
+    assert not button.property("enabled")
+    state.toggleGrocery(state.groceries[0]["id"])
+    qt_app.processEvents()
+    assert button.property("enabled")
+    QMetaObject.invokeMethod(button, "clicked")
+    qt_app.processEvents()
+    assert state.groceries == []
+    assert state.pantry[0]["amount"] == 120
+    assert not button.property("enabled")
+
+
 def test_food_quantity_validation_matches_storage_limits(desktop, qt_app):
     state, window = desktop
     dialog = window.findChild(QObject, "foodDialog")

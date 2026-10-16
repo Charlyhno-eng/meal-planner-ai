@@ -407,5 +407,9 @@
   "Désactive les transitions et les mouvements de la carte IA pour cette session.": "Disables transitions and movement on the AI map for this session.",
   "Animations réduites": "Animations reduced",
   "Dictée vocale": "Voice dictation",
-  "Connexion à l’assistant": "Assistant connection"
+  "Connexion à l’assistant": "Assistant connection",
+  "Terminer les courses": "Finish shopping",
+  "Terminez les courses pour ajouter les articles cochés à votre réserve.": "Finish shopping to add checked items to your pantry.",
+  "Articles cochés ajoutés à la réserve": "Checked items added to the pantry",
+  "La quantité en réserve dépasserait 100 000.": "The pantry quantity would exceed 100,000."
 }

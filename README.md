@@ -88,7 +88,10 @@ be greater than zero and no higher than 100,000; an inline hint explains this
 limit. Dialogs keep operation feedback visible while open, and meal settings
 keep their save action visible while the fields scroll on smaller windows.
 Saving meal settings prepares future requests; creating recipes happens in the
-assistant. Grocery checkmarks do not update pantry stock.
+assistant. Check purchased groceries, then click **Finish shopping** to add their
+quantities to the current session's pantry and remove them from the grocery list.
+Matching foods with the same unit are added to existing stock; unchecked items
+remain on the list. Checkmarks alone do not update pantry stock.
 
 Settings presents language and assistant connection before optional appearance
 and dictation controls. If dictation needs setup, Settings scrolls directly to

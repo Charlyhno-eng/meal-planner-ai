@@ -825,6 +825,61 @@ class DemoState(QObject):
         self.changed.emit()
 
     @Slot()
+    def finishGroceries(self):
+        purchases = [
+            item
+            for item in self._coordinator_data.groceries
+            if "request:" + item.id in self._checked
+        ]
+        if not purchases:
+            return
+        pantry = [item.copy() for item in self._pantry]
+        next_id = self._next_id
+        for purchase in purchases:
+            name = canonical_food(purchase.name)
+            existing = next(
+                (
+                    item
+                    for item in pantry
+                    if canonical_food(item["name"]).casefold() == name.casefold()
+                    and item["unit"] == purchase.unit
+                ),
+                None,
+            )
+            if existing is None:
+                pantry.append(
+                    dict(
+                        id=next_id,
+                        name=name,
+                        amount=purchase.amount,
+                        unit=purchase.unit,
+                        category=purchase.category,
+                    )
+                )
+                next_id += 1
+            else:
+                existing["amount"] += purchase.amount
+                if existing["amount"] > 100000:
+                    self._notify("La quantité en réserve dépasserait 100 000.")
+                    return
+        purchased_ids = {item.id for item in purchases}
+        data = self._coordinator_data.model_copy(deep=True)
+        data.groceries = [
+            item for item in data.groceries if item.id not in purchased_ids
+        ]
+        try:
+            self._save_coordinator(data)
+        except (ValueError, OSError):
+            self._notify("Impossible d’enregistrer les demandes. Réessayez.")
+            return
+        self._coordinator_data = data
+        self._pantry = pantry
+        self._next_id = next_id
+        self._checked.difference_update("request:" + key for key in purchased_ids)
+        self.changed.emit()
+        self._notify("Articles cochés ajoutés à la réserve")
+
+    @Slot()
     def copyGroceries(self):
         lines = [
             f"{'✓' if item['checked'] else '☐'} {item['name']} — {item['quantity']}"
