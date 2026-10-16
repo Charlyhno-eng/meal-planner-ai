@@ -228,3 +228,165 @@ def test_catalogue_planning_preserves_profiles_and_checks_intolerances(
     assert (
         DemoState(config_path=tmp_path / "config.toml").settings["members"] == profiles
     )
+
+
+def test_guest_groups_persist_before_planning_and_keep_individual_exclusions(
+    qt_app, tmp_path
+):
+    state = DemoState(config_path=tmp_path / "config.toml")
+    assert not state.meals
+    assert state.addGuestGroup("Friends", [0, 2], PROFILES)
+    assert state.addGuestGroup("Family", [1], [{"name": "Eve"}])
+    restored = DemoState(config_path=tmp_path / "config.toml")
+    groups = restored.settings["guest_groups"]
+    assert groups[0] == dict(name="Friends", meals=[0, 2], members=PROFILES)
+    assert groups[1]["members"][0]["name"] == "Eve"
+    assert restored.planning_context()["settings"]["guest_groups"] == groups
+    assert restored.setHousehold([{"name": "Resident"}], False, "")
+    assert restored.settings["guest_groups"] == groups
+    assert restored.removeGuestGroup(0)
+    assert (
+        len(DemoState(config_path=tmp_path / "config.toml").settings["guest_groups"])
+        == 1
+    )
+
+
+def test_guest_groups_scale_selected_meals_and_groceries(qt_app, sample_session):
+    state = DemoState()
+    before = state._planned_ingredients()
+    assert state.addGuestGroup("Friends", [0, 2], [{"name": "Eve"}])
+    assert state.addGuestGroup("Family", [2], [{"name": "Jo"}])
+    assert [meal["guests"] for meal in state.meals[:4]] == [1, 0, 2, 0]
+    assert [meal["servings"] for meal in state.meals[:4]] == [3, 2, 4, 2]
+    assert state._planned_ingredients()[0].amount == before[0].amount * 1.5
+    assert state.removeGuestGroup(0)
+    assert [meal["guests"] for meal in state.meals[:4]] == [0, 0, 1, 0]
+
+
+@pytest.mark.parametrize(
+    "meals, members", [([], PROFILES), ([0, 0], PROFILES), ([-1], PROFILES), ([0], [])]
+)
+def test_invalid_guest_groups_do_not_mutate_state(qt_app, meals, members):
+    state = DemoState()
+    before = state.planning_context()
+    assert not state.addGuestGroup("Invalid", meals, members)
+    assert state.planning_context() == before
+
+
+def test_guest_save_failure_preserves_state(qt_app, tmp_path, monkeypatch):
+    state = DemoState(config_path=tmp_path / "config.toml")
+    assert state.addGuestGroup("Friends", [0], PROFILES)
+    before = state.planning_context()
+
+    def fail(*_args):
+        raise OSError("read only")
+
+    monkeypatch.setattr("src.storage.household.os.replace", fail)
+    assert not state.addGuestGroup("Family", [1], PROFILES)
+    assert not state.removeGuestGroup(0)
+    assert state.planning_context() == before
+
+
+@pytest.mark.parametrize("language", ["fr", "en"])
+def test_household_add_button_and_guest_dialog_work_without_meals(
+    qt_app, tmp_path, language
+):
+    state = DemoState(config_path=tmp_path / "config.toml")
+    state.setLanguage(language)
+    engine = QQmlApplicationEngine()
+    warnings = []
+    engine.warnings.connect(lambda errors: warnings.extend(str(e) for e in errors))
+    engine.setInitialProperties({"demo": state})
+    engine.load(Path(app.__file__).parent / "qml" / "Main.qml")
+    window = engine.rootObjects()[0]
+    window.setWidth(960)
+    window.setHeight(700)
+    try:
+        window.setProperty("currentPage", 3)
+        dialog = window.findChild(QObject, "preferencesDialog")
+        QMetaObject.invokeMethod(dialog, "open")
+        QTest.qWait(200)
+        content = dialog.property("contentItem")
+        people = visual_child(content, "householdPeople")
+        # Exercise the actual plus indicator, not a programmatic value change.
+        point = people.mapToScene(people.boundingRect().center())
+        point.setX(point.x() + people.width() / 2 - 20)
+        QTest.mouseClick(window, Qt.LeftButton, pos=point.toPoint())
+        qt_app.processEvents()
+        assert people.property("value") == 3
+        assert visual_child(content, "memberName-2") is not None
+        field = visual_child(content, "memberIntolerances-0")
+        field.setProperty("text", "lactose")
+        QMetaObject.invokeMethod(field, "textEdited")
+        QMetaObject.invokeMethod(visual_child(content, "saveHousehold"), "clicked")
+        assert state.settings["members"][0]["intolerances"] == "lactose"
+        QTest.qWait(200)
+        button = visual_child(window.contentItem(), "addGuestGroupButton")
+        assert button.property("enabled")
+        QMetaObject.invokeMethod(button, "clicked")
+        QTest.qWait(200)
+        guest_dialog = window.findChild(QObject, "guestDialog")
+        assert guest_dialog.property("visible")
+        content = guest_dialog.property("contentItem")
+        for index in (0, 2):
+            QMetaObject.invokeMethod(
+                visual_child(content, f"guestMeal-{index}"), "clicked"
+            )
+        for name, value in [("guestName-0", "Eve"), ("guestIntolerances-0", "gluten")]:
+            field = visual_child(content, name)
+            field.setProperty("text", value)
+            QMetaObject.invokeMethod(field, "textEdited")
+        QMetaObject.invokeMethod(visual_child(content, "saveGuestGroup"), "clicked")
+        assert not guest_dialog.property("visible")
+        group = state.settings["guest_groups"][0]
+        assert group["meals"] == [0, 2]
+        assert group["members"][0] == {"name": "Eve", "intolerances": "gluten"}
+        QMetaObject.invokeMethod(guest_dialog, "open")
+        QTest.qWait(200)
+        QMetaObject.invokeMethod(guest_dialog, "close")
+        assert len(state.settings["guest_groups"]) == 1
+        assert not warnings, "\n".join(warnings)
+    finally:
+        window.close()
+        engine.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+
+
+def test_guest_exclusions_reject_future_recipes_and_scale_workflow_groceries(qt_app):
+    from src.workflow.meal_request import calculate_execution_groceries
+
+    state = DemoState()
+    assert state.addGuestGroup(
+        "Friends", [0], [{"name": "Eve", "intolerances": "lactose"}]
+    )
+    meal = RequestedMeal(
+        title="Dish",
+        servings=2,
+        period=Period(start="2026-10-07", end="2026-10-07"),
+        recipe=Recipe(
+            title="Dish",
+            servings=2,
+            subtitle="Dish",
+            minutes=10,
+            vegetarian=True,
+            ingredients=[
+                Ingredient(
+                    name="Milk", amount=100, unit="ml", category="Produits frais"
+                )
+            ],
+            steps=["Mix."],
+        ),
+    )
+    with pytest.raises(PreferenceConflict):
+        check_preferences([meal], state.settings)
+    meal.recipe.ingredients[0].name = "Water"
+    commands = CoordinatorProposal(
+        actions=[dict(service="meal_request", title="Dish", servings=2)]
+    )
+    groceries = calculate_execution_groceries(
+        commands, [meal], state.planning_context()
+    )
+    assert groceries[0].required == 150
+    state.apply_commands(commands, planned_meals=[meal])
+    assert state.meals[0]["servings"] == 3
+    assert state._planned_ingredients()[0].amount == 150

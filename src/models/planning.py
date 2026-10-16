@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.models.household import HouseholdMember, excluded_terms
+from src.models.household import GuestGroup, HouseholdMember, excluded_terms
 
 
 class PlanningSettings(BaseModel):
@@ -18,6 +18,8 @@ class PlanningSettings(BaseModel):
     vegetarian: bool
     dislikes: str = Field(max_length=1000)
     members: list[HouseholdMember] = Field(default_factory=list, max_length=12)
+
+    guest_groups: list[GuestGroup] = Field(default_factory=list, max_length=28)
 
     @model_validator(mode="after")
     def check_period(self):

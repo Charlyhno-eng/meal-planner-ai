@@ -19,7 +19,7 @@ def plan_meals(
         "for those servings, not per person. Include every ingredient used in steps. "
         "Use canonical French food names and units g, ml, pièce (convert kg/l). "
         "Respect vegetarian settings, all household exclusions and each member’s "
-        "intolerances, using suitable "
+        "intolerances, including every guest group member, using suitable "
         "substitutions while keeping the requested dish recognizable. Include cooking "
         "and resting time in minutes. Do not change pantry, dates, household "
         "or guests. "

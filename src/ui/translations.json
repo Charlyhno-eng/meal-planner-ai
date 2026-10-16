@@ -419,5 +419,13 @@
   "Aliments à éviter": "Foods to avoid",
   "Aliment à éviter": "Food to avoid",
   "Ex. lactose, champignons": "E.g. lactose, mushrooms",
-  "Intolérances et aliments non souhaités : cette liste s’applique à tout le foyer.": "Intolerances and unwanted foods: this list applies to the whole household."
+  "Intolérances et aliments non souhaités : cette liste s’applique à tout le foyer.": "Intolerances and unwanted foods: this list applies to the whole household.",
+  "Ajouter une personne": "Add a person",
+  "Intolérances et aliments à éviter (séparés par des virgules)": "Intolerances and disliked foods (comma-separated)",
+  "Ajouter un groupe d’invités": "Add a guest group",
+  "Nom du groupe (facultatif)": "Group name (optional)",
+  "Sélectionnez les repas de présence": "Select the meals they will attend",
+  " repas sélectionné(s)": " selected meal(s)",
+  "Les aliments à éviter des invités s’appliquent à tout le planning. Les portions s’adaptent aux repas sélectionnés.": "Guest food exclusions apply to the entire plan. Portions adjust for selected meals.",
+  "Impossible d’enregistrer les invités. Vérifiez les préférences et les repas.": "Unable to save guests. Check preferences and meals."
 }

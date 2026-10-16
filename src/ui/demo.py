@@ -22,7 +22,7 @@ from src.models.coordinator import (
     ShoppingItem,
 )
 from src.models.execution import MealExecution
-from src.models.household import Household, HouseholdMember, excluded_terms
+from src.models.household import GuestGroup, Household, HouseholdMember, excluded_terms
 from src.models.planning import (
     PlanningProposal,
     PlanningSettings,
@@ -99,6 +99,7 @@ class DemoState(QObject):
             "people": 2,
             "vegetarian": False,
             "dislikes": "",
+            "guest_groups": [],
             "members": [{"name": "", "intolerances": ""} for _ in range(2)],
         }
         self._household_path = (
@@ -143,6 +144,7 @@ class DemoState(QObject):
             "settings": self.settings,
             "coordinator": self._coordinator_data.model_dump(mode="json"),
             "pantry": [item.copy() for item in self._pantry],
+            "planned_meal_count": len(self.meals),
             "planned_ingredients": [
                 item.model_dump() for item in self._planned_ingredients()
             ],
@@ -184,7 +186,13 @@ class DemoState(QObject):
         household = Household.model_validate(
             {
                 key: settings[key]
-                for key in ("people", "members", "vegetarian", "dislikes")
+                for key in (
+                    "people",
+                    "members",
+                    "vegetarian",
+                    "dislikes",
+                    "guest_groups",
+                )
             }
         )
         if self._household_path is not None:
@@ -314,6 +322,7 @@ class DemoState(QObject):
                 pantry.append(dict(id=next_id, **food))
                 next_id += 1
         proposed = proposal.settings.model_dump(mode="json")
+        proposed["guest_groups"] = deepcopy(self._settings["guest_groups"])
         if not proposed["members"]:
             proposed["members"] = [
                 self._settings["members"][i]
@@ -321,11 +330,11 @@ class DemoState(QObject):
                 else HouseholdMember().model_dump()
                 for i in range(proposed["people"])
             ]
-            validate_recipes(
-                proposal.model_copy(update={"settings": PlanningSettings(**proposed)}),
-                self.recipe_catalogue,
-                ENGLISH,
-            )
+        validate_recipes(
+            proposal.model_copy(update={"settings": PlanningSettings(**proposed)}),
+            self.recipe_catalogue,
+            ENGLISH,
+        )
         self._save_household(proposed)
         self._settings = proposed
         self._plan = proposal.recipe_ids.copy()
@@ -444,7 +453,7 @@ class DemoState(QObject):
 
     def _meal(self, index):
         recipe = self.recipe_catalogue[self._plan[index]]
-        guests = self._guests.get(index, 0)
+        guests = self._guests.get(index, 0) + self._group_count(index)
         servings = self._settings["people"] + guests
         return dict(
             **{
@@ -477,7 +486,8 @@ class DemoState(QObject):
 
     def _generated_meal(self, item, index):
         recipe = item.recipe
-        servings = item.servings + item.guests
+        guests = item.guests + self._group_count(len(self._plan) + index)
+        servings = item.servings + guests
         return dict(
             id=len(self._plan) + index,
             requestId=item.id,
@@ -490,7 +500,7 @@ class DemoState(QObject):
             label=f"{self.translate('Repas ')}{len(self._plan) + index + 1}",
             servings=servings,
             baseServings=item.servings,
-            guests=item.guests,
+            guests=guests,
             periodLabel=(
                 f"{item.period.start.isoformat()} — {item.period.end.isoformat()}"
             ),
@@ -523,7 +533,11 @@ class DemoState(QObject):
     def _planned_ingredients(self):
         ingredients = []
         for index, recipe_id in enumerate(self._plan):
-            servings = self._settings["people"] + self._guests.get(index, 0)
+            servings = (
+                self._settings["people"]
+                + self._guests.get(index, 0)
+                + self._group_count(index)
+            )
             for name, amount, unit, category in self.recipe_catalogue[recipe_id][
                 "ingredients"
             ]:
@@ -535,13 +549,13 @@ class DemoState(QObject):
                         category=category,
                     )
                 )
-        for meal in self._generated_meals():
+        for index, meal in enumerate(self._generated_meals(), len(self._plan)):
             for ingredient in meal.recipe.ingredients:
                 ingredients.append(
                     ingredient.model_copy(
                         update={
                             "amount": ingredient.amount
-                            * (meal.servings + meal.guests)
+                            * (meal.servings + meal.guests + self._group_count(index))
                             / meal.recipe.servings
                         }
                     )
@@ -656,6 +670,7 @@ class DemoState(QObject):
                 count=count,
                 people=people,
                 vegetarian=vegetarian,
+                guest_groups=self._settings["guest_groups"],
                 dislikes=dislikes.strip(),
                 members=(
                     members
@@ -782,6 +797,58 @@ class DemoState(QObject):
             self._notify("Impossible d’enregistrer les demandes. Réessayez.")
             return False
         self._coordinator_data = data
+        self.changed.emit()
+        return True
+
+    def _group_count(self, index):
+        return sum(
+            len(group["members"])
+            for group in self._settings["guest_groups"]
+            if index in group["meals"]
+        )
+
+    @Slot(str, "QVariantList", "QVariantList", result=bool)
+    def addGuestGroup(self, name, meals, members):
+        try:
+            group = GuestGroup(name=name, meals=meals, members=members)
+            settings = deepcopy(self._settings)
+            settings["guest_groups"].append(group.model_dump())
+            check_preferences(self._generated_meals(), settings)
+            # Guest exclusions apply throughout planning, including future recipes.
+            for index in range(len(self._plan)):
+                recipe = self.recipe_catalogue[self._plan[index]]
+                if any(
+                    term in food.casefold()
+                    or term in ENGLISH.get(food, food).casefold()
+                    for term in excluded_terms(settings)
+                    for food, *_ in recipe["ingredients"]
+                ):
+                    raise ValueError("Guest preference conflict")
+            self._save_household(settings)
+        except (ValueError, OSError):
+            self._notify(
+                "Impossible d’enregistrer les invités. "
+                "Vérifiez les préférences et les repas."
+            )
+            return False
+        self._settings = settings
+        self._checked.clear()
+        self.changed.emit()
+        return True
+
+    @Slot(int, result=bool)
+    def removeGuestGroup(self, index):
+        if not 0 <= index < len(self._settings["guest_groups"]):
+            return False
+        settings = deepcopy(self._settings)
+        settings["guest_groups"].pop(index)
+        try:
+            self._save_household(settings)
+        except (ValueError, OSError):
+            self._notify("Impossible d’enregistrer le foyer. Réessayez.")
+            return False
+        self._settings = settings
+        self._checked.clear()
         self.changed.emit()
         return True
 

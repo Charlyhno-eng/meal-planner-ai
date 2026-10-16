@@ -61,8 +61,21 @@ def calculate_execution_groceries(
         Ingredient.model_validate(item)
         for item in context.get("planned_ingredients", [])
     ]
-    for meal in meals:
-        ingredients.extend(meal.recipe.ingredients)
+    groups = context["settings"].get("guest_groups", [])
+    for index, meal in enumerate(meals, context.get("planned_meal_count", 0)):
+        guests = meal.guests + sum(
+            len(group["members"]) for group in groups if index in group["meals"]
+        )
+        ingredients.extend(
+            ingredient.model_copy(
+                update={
+                    "amount": ingredient.amount
+                    * (meal.servings + guests)
+                    / meal.recipe.servings
+                }
+            )
+            for ingredient in meal.recipe.ingredients
+        )
     return calculate_groceries(ingredients, pantry)
 
 

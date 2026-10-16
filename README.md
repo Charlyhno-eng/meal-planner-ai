@@ -13,9 +13,15 @@ the size or total quantity; the assistant uses the original request to continue.
 Naturally countable foods such as eggs can still be recorded in pieces.
 Set the planning period and household size for your meals.
 Record guests and dietary preferences for the household.
-In Household, use the single “Foods to avoid” list for intolerances and unwanted
-foods. Add each item with Enter or Add; click its chip to remove it. Existing
-member intolerances and shared exclusions appear together in this list.
+In Household, use Edit to set the number of residents, add people, and enter each
+person’s name and comma-separated intolerances or disliked foods. The shared
+“Foods to avoid” list applies to everyone; add items with Enter or Add.
+Add guest groups even before generating meals. Select the meal numbers each group
+will attend and enter each guest’s name and foods to avoid. Repeat for different
+groups during the week. Groups are saved locally; selected meal numbers refer to
+positions in the meal list. Their portions are added only to those meals, and their
+food exclusions apply to the entire planning session. Incompatible existing
+recipes must be removed or changed before saving new exclusions.
 Ask the assistant to create meals and recipes from a written request.
 Review recipes and see which ingredients are available or need buying.
 A deterministic verification agent checks proposed recipes and grocery requirements

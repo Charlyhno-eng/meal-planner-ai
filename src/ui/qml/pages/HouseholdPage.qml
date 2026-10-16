@@ -7,7 +7,7 @@ ScrollView {
     id: page
     RemovalDialog {
         id: removalDialog
-        onConfirmed: function(recordId) { page.store.setGuests(recordId, 0); }
+        onConfirmed: function(recordId) { if (String(recordId).startsWith("group:")) page.store.removeGuestGroup(Number(String(recordId).slice(6))); else page.store.setGuests(Number(recordId), 0); }
     }
     onVisibleChanged: if (!visible) removalDialog.close()
     required property var store
@@ -88,7 +88,11 @@ ScrollView {
                             font.weight: Font.DemiBold
                             wrapMode: Text.WordWrap
                         }
-
+                        Caption {
+                            Layout.fillWidth: true
+                            text: profile.modelData.intolerances
+                            visible: text.length > 0
+                        }
                     }
                 }
                 Rectangle {
@@ -150,12 +154,12 @@ ScrollView {
             }
             ActionButton {
                 text: I18n.tr("+  Inviter à un repas")
-                enabled: page.store.meals.length > 0
+                objectName: "addGuestGroupButton"
                 onClicked: page.guestRequested()
             }
         }
         Panel {
-            visible: page.store.guests.length === 0
+            visible: page.store.guests.length === 0 && page.store.settings.guest_groups.length === 0
             Layout.fillWidth: true
             implicitHeight: 138
             ColumnLayout {
@@ -167,12 +171,11 @@ ScrollView {
                     Layout.alignment: Qt.AlignHCenter
                 }
                 Caption {
-                    text: page.store.meals.length ? I18n.tr("Les portions s’adaptent à vos invités. Vérifiez ensuite les ingrédients à acheter.") : I18n.tr("Planifiez un repas avant d’ajouter des invités.")
+                    text: I18n.tr("Les portions s’adaptent à vos invités. Vérifiez ensuite les ingrédients à acheter.")
                     Layout.alignment: Qt.AlignHCenter
                 }
                 ActionButton {
                     text: I18n.tr("Ajouter des invités")
-                    enabled: page.store.meals.length > 0
                     quiet: true
                     Layout.alignment: Qt.AlignHCenter
                     onClicked: page.guestRequested()
@@ -180,7 +183,50 @@ ScrollView {
             }
         }
         Repeater {
-            model: page.store.guests
+            model: page.store.settings.guest_groups
+            delegate: Panel {
+                id: groupRow
+                required property var modelData
+                required property int index
+                Layout.fillWidth: true
+                implicitHeight: groupContent.implicitHeight + 36
+                ColumnLayout {
+                    id: groupContent
+                    anchors.fill: parent
+                    anchors.margins: 18
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Heading {
+                            Layout.fillWidth: true
+                            font.pixelSize: 18
+                            text: groupRow.modelData.name || I18n.tr("Les invités")
+                        }
+                        ActionButton {
+                            text: I18n.tr("Retirer")
+                            quiet: true
+                            destructive: true
+                            objectName: "removeGuestGroupButton"
+                            onClicked: removalDialog.request("group:" + groupRow.index, groupRow.modelData.name || I18n.tr("Les invités"))
+                        }
+                    }
+                    Caption {
+                        Layout.fillWidth: true
+                        text: groupRow.modelData.members.length + I18n.tr(" invité(s) · ") + groupRow.modelData.meals.map(i => I18n.tr("Repas ") + (i + 1)).join(", ")
+                    }
+                    Repeater {
+                        model: groupRow.modelData.members
+                        delegate: Caption {
+                            required property var modelData
+                            required property int index
+                            Layout.fillWidth: true
+                            text: (modelData.name || I18n.tr("Personne ") + (index + 1)) + (modelData.intolerances ? " · " + modelData.intolerances : "")
+                        }
+                    }
+                }
+            }
+        }
+        Repeater {
+            model: page.store.guests.filter(meal => meal.guests > page.store.settings.guest_groups.reduce((total, group) => total + (group.meals.indexOf(meal.id) >= 0 ? group.members.length : 0), 0))
             delegate: Panel {
                 id: guestRow
                 required property var modelData

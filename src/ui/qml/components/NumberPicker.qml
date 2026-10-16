@@ -23,6 +23,8 @@ SpinBox {
     }
     up.indicator: Rectangle {
         x: control.width - width
+        implicitWidth: 40
+        implicitHeight: 44
         width: 40
         height: control.height
         radius: 9
@@ -35,6 +37,8 @@ SpinBox {
         }
     }
     down.indicator: Rectangle {
+        implicitWidth: 40
+        implicitHeight: 44
         width: 40
         height: control.height
         radius: 9

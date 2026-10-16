@@ -18,7 +18,7 @@ Modal {
     function save() {
         const profiles = [];
         for (let i = 0; i < members.count; ++i)
-            profiles.push({name: members.get(i).name, intolerances: ""});
+            profiles.push({name: members.get(i).name, intolerances: members.get(i).intolerances});
         exclusions.addPending();
         if (store.setHousehold(profiles, vegetarian, exclusions.items.join(", ")))
             close();
@@ -30,8 +30,7 @@ Modal {
         people.value = store.settings.people;
         resizeMembers(people.value);
         vegetarian = store.settings.vegetarian;
-        exclusions.load([store.settings.dislikes].concat(
-            store.settings.members.map(member => member.intolerances)));
+        exclusions.load([store.settings.dislikes]);
     }
     contentItem: ColumnLayout {
         spacing: 18
@@ -49,7 +48,7 @@ Modal {
                     id: people
                     objectName: "householdPeople"
                     to: 12
-                    onValueModified: dialog.resizeMembers(value)
+                    onValueChanged: dialog.resizeMembers(value)
                 }
                 Repeater {
                     model: members
@@ -70,8 +69,21 @@ Modal {
                             Accessible.name: I18n.tr("Nom") + " " + (memberRow.index + 1)
                             onTextEdited: members.setProperty(memberRow.index, "name", text)
                         }
-
+                        Field {
+                            objectName: "memberIntolerances-" + memberRow.index
+                            Layout.fillWidth: true
+                            text: memberRow.intolerances
+                            placeholderText: I18n.tr("Intolérances et aliments à éviter (séparés par des virgules)")
+                            maximumLength: 1000
+                            onTextEdited: members.setProperty(memberRow.index, "intolerances", text)
+                        }
                     }
+                }
+                ActionButton {
+                    objectName: "addHouseholdMember"
+                    text: I18n.tr("Ajouter une personne")
+                    enabled: people.value < 12
+                    onClicked: people.increase()
                 }
                 Caption { text: I18n.tr("Alimentation") }
                 RowLayout {
