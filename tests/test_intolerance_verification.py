@@ -131,3 +131,9 @@ def test_save_rechecks_current_intolerances_before_any_mutation(
         state.apply_execution(result)
     assert state.planning_context() == before
     assert (tmp_path / "data" / "coordinator.json").read_bytes() == saved
+
+
+def test_shared_exclusions_keep_intolerance_source_checks():
+    milk = Ingredient(name="Milk", amount=100, unit="ml", category="Épicerie")
+    with pytest.raises(IntoleranceConflict):
+        check_intolerances([], [milk], {"dislikes": "lactose", "members": []})

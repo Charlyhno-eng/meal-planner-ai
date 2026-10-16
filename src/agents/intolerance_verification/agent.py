@@ -1,4 +1,4 @@
-"""Check every member's intolerances independently of LLM instructions."""
+"""Check household food exclusions independently of LLM instructions."""
 
 from collections.abc import Iterable
 
@@ -21,9 +21,9 @@ def check_intolerances(
     """Reject conflicts, including recipe ingredients already covered by stock.
 
     Use the shared French/English vocabulary and gluten/lactose source mapping.
-    Free-text intolerances are comma-separated, as in household settings.
+    Legacy member intolerances and shared food exclusions are both checked.
     """
-    excluded = excluded_terms({"members": settings.get("members", [])})
+    excluded = excluded_terms(settings)
     if not excluded:
         return
     texts = []

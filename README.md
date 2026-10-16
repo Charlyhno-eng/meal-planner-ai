@@ -13,10 +13,13 @@ the size or total quantity; the assistant uses the original request to continue.
 Naturally countable foods such as eggs can still be recorded in pieces.
 Set the planning period and household size for your meals.
 Record guests and dietary preferences for the household.
+In Household, use the single “Foods to avoid” list for intolerances and unwanted
+foods. Add each item with Enter or Add; click its chip to remove it. Existing
+member intolerances and shared exclusions appear together in this list.
 Ask the assistant to create meals and recipes from a written request.
 Review recipes and see which ingredients are available or need buying.
 A deterministic verification agent checks proposed recipes and grocery requirements
-against every household member's comma-separated intolerances before saving.
+against the household foods to avoid before saving.
 It checks ingredients even when pantry stock covers them, using the shared
 French/English food vocabulary and common gluten and lactose ingredient sources.
 These text checks do not identify undeclared allergens in product labels.

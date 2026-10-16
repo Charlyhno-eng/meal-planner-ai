@@ -149,7 +149,6 @@ def test_household_dialog_edits_saves_and_cancels(qt_app, tmp_path, language):
         content = dialog.property("contentItem")
         for name, value in [
             ("memberName-0", "Alice"),
-            ("memberIntolerances-0", "lactose"),
             ("memberName-1", "Bob"),
         ]:
             field = visual_child(content, name)
@@ -157,11 +156,19 @@ def test_household_dialog_edits_saves_and_cancels(qt_app, tmp_path, language):
             field.forceActiveFocus()
             field.setProperty("text", value)
             QMetaObject.invokeMethod(field, "textEdited")
+        field = visual_child(content, "excludedFoodInput")
+        field.setProperty("text", "lactose")
+        QMetaObject.invokeMethod(visual_child(content, "addExcludedFood"), "clicked")
+        field.setProperty("text", " Lactose ")
+        QMetaObject.invokeMethod(field, "accepted")
+        tags = visual_child(content, "householdExclusions")
+        assert tags.property("items").toVariant() == ["lactose"]
         assert QMetaObject.invokeMethod(
             visual_child(content, "saveHousehold"), "clicked"
         )
         qt_app.processEvents()
-        assert state.settings["members"][0] == PROFILES[0]
+        assert state.settings["members"][0] == {"name": "Alice", "intolerances": ""}
+        assert state.settings["dislikes"] == "lactose"
         assert state.settings["members"][1]["name"] == "Bob"
         QMetaObject.invokeMethod(dialog, "open")
         QTest.qWait(200)
@@ -171,7 +178,8 @@ def test_household_dialog_edits_saves_and_cancels(qt_app, tmp_path, language):
         field.setProperty("text", "Discarded")
         QMetaObject.invokeMethod(field, "textEdited")
         QMetaObject.invokeMethod(dialog, "close")
-        assert state.settings["members"][0] == PROFILES[0]
+        assert state.settings["members"][0] == {"name": "Alice", "intolerances": ""}
+        assert state.settings["dislikes"] == "lactose"
         QMetaObject.invokeMethod(dialog, "open")
         QTest.qWait(200)
         people = visual_child(content, "householdPeople")
@@ -185,7 +193,8 @@ def test_household_dialog_edits_saves_and_cancels(qt_app, tmp_path, language):
         )
         QMetaObject.invokeMethod(button, "clicked")
         assert state.settings["people"] == 12
-        assert state.settings["members"][0] == PROFILES[0]
+        assert state.settings["members"][0] == {"name": "Alice", "intolerances": ""}
+        assert state.settings["dislikes"] == "lactose"
         assert not warnings, "\n".join(warnings)
     finally:
         window.close()

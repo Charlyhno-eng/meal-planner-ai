@@ -18,8 +18,9 @@ Modal {
     function save() {
         const profiles = [];
         for (let i = 0; i < members.count; ++i)
-            profiles.push({name: members.get(i).name, intolerances: members.get(i).intolerances});
-        if (store.setHousehold(profiles, vegetarian, dislikes.text))
+            profiles.push({name: members.get(i).name, intolerances: ""});
+        exclusions.addPending();
+        if (store.setHousehold(profiles, vegetarian, exclusions.items.join(", ")))
             close();
     }
     onOpened: {
@@ -29,7 +30,8 @@ Modal {
         people.value = store.settings.people;
         resizeMembers(people.value);
         vegetarian = store.settings.vegetarian;
-        dislikes.text = store.settings.dislikes;
+        exclusions.load([store.settings.dislikes].concat(
+            store.settings.members.map(member => member.intolerances)));
     }
     contentItem: ColumnLayout {
         spacing: 18
@@ -48,10 +50,6 @@ Modal {
                     objectName: "householdPeople"
                     to: 12
                     onValueModified: dialog.resizeMembers(value)
-                }
-                Caption {
-                    Layout.fillWidth: true
-                    text: I18n.tr("Les intolérances de chacun s’appliquent à tous les repas du foyer.")
                 }
                 Repeater {
                     model: members
@@ -72,16 +70,7 @@ Modal {
                             Accessible.name: I18n.tr("Nom") + " " + (memberRow.index + 1)
                             onTextEdited: members.setProperty(memberRow.index, "name", text)
                         }
-                        Field {
-                            objectName: "memberIntolerances-" + memberRow.index
-                            Layout.fillWidth: true
-                            text: memberRow.intolerances
-                            placeholderText: I18n.tr("Ex. lactose, gluten, arachides")
-                            maximumLength: 1000
-                            Accessible.name: I18n.tr("Intolérances, séparées par des virgules")
-                                             + " " + (memberRow.index + 1)
-                            onTextEdited: members.setProperty(memberRow.index, "intolerances", text)
-                        }
+
                     }
                 }
                 Caption { text: I18n.tr("Alimentation") }
@@ -98,13 +87,15 @@ Modal {
                         onClicked: dialog.vegetarian = true
                     }
                 }
-                Caption { text: I18n.tr("Aliments exclus") }
-                Field {
-                    id: dislikes
+                Caption { text: I18n.tr("Aliments à éviter") }
+                Caption {
                     Layout.fillWidth: true
-                    placeholderText: I18n.tr("Ex. champignons, saumon")
-                    maximumLength: 1000
-                    Accessible.name: I18n.tr("Aliments exclus, séparés par des virgules")
+                    text: I18n.tr("Intolérances et aliments non souhaités : cette liste s’applique à tout le foyer.")
+                }
+                FoodTags {
+                    id: exclusions
+                    objectName: "householdExclusions"
+                    Layout.fillWidth: true
                 }
                 Caption {
                     text: I18n.tr("Les préférences s’appliquent à tout le foyer. Les recettes existantes doivent être compatibles. Les articles cochés seront réinitialisés.")

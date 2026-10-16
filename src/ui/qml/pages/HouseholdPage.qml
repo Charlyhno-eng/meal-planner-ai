@@ -88,10 +88,7 @@ ScrollView {
                             font.weight: Font.DemiBold
                             wrapMode: Text.WordWrap
                         }
-                        Caption {
-                            Layout.fillWidth: true
-                            text: I18n.tr("Intolérances : ") + (profile.modelData.intolerances || I18n.tr("Aucune"))
-                        }
+
                     }
                 }
                 Rectangle {
@@ -121,17 +118,25 @@ ScrollView {
                         Layout.fillWidth: true
                         spacing: 10
                         Caption {
-                            text: I18n.tr("Aliments exclus")
+                            text: I18n.tr("Aliments à éviter")
                             font.pixelSize: 11
                             font.weight: Font.Medium
                         }
-                        Text {
-                            text: page.store.settings.dislikes || I18n.tr("Aucun")
-                            color: Theme.text
-                            font.pixelSize: 15
+                        FoodTags {
+                            id: excludedTags
                             Layout.fillWidth: true
-                            wrapMode: Text.WordWrap
+                            editable: false
+                            function refresh() {
+                                load([page.store.settings.dislikes].concat(
+                                    page.store.settings.members.map(member => member.intolerances)));
+                            }
+                            Component.onCompleted: refresh()
+                            Connections {
+                                target: page.store
+                                function onSettingsChanged() { excludedTags.refresh(); }
+                            }
                         }
+
                     }
                 }
             }
