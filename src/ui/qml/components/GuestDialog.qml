@@ -10,13 +10,13 @@ Modal {
     property var selectedMeals: []
     ListModel { id: members }
     function resizeMembers(size) {
-        while (members.count < size) members.append({name: "", intolerances: ""});
+        while (members.count < size) members.append({name: "", foodsToAvoid: ""});
         while (members.count > size) members.remove(members.count - 1);
     }
     function save() {
         const profiles = [];
         for (let i = 0; i < members.count; ++i)
-            profiles.push({name: members.get(i).name, intolerances: members.get(i).intolerances});
+            profiles.push({name: members.get(i).name, foods_to_avoid: members.get(i).foodsToAvoid});
         if (store.addGuestGroup(groupName.text, selectedMeals, profiles)) close();
     }
     onOpened: {
@@ -84,7 +84,7 @@ Modal {
                         id: profile
                         required property int index
                         required property string name
-                        required property string intolerances
+                        required property string foodsToAvoid
                         Layout.fillWidth: true
                         Caption { text: I18n.tr("Personne ") + (profile.index + 1) }
                         Field {
@@ -96,12 +96,12 @@ Modal {
                             onTextEdited: members.setProperty(profile.index, "name", text)
                         }
                         Field {
-                            objectName: "guestIntolerances-" + profile.index
+                            objectName: "guestFoodsToAvoid-" + profile.index
                             Layout.fillWidth: true
-                            text: profile.intolerances
+                            text: profile.foodsToAvoid
                             maximumLength: 1000
-                            placeholderText: I18n.tr("Intolérances et aliments à éviter (séparés par des virgules)")
-                            onTextEdited: members.setProperty(profile.index, "intolerances", text)
+                            placeholderText: I18n.tr("Aliments que cette personne ne veut pas manger (séparés par des virgules)")
+                            onTextEdited: members.setProperty(profile.index, "foodsToAvoid", text)
                         }
                     }
                 }

@@ -1,6 +1,6 @@
-"""Validated household profiles and shared ingredient exclusions."""
+"""Validated household profiles and their food exclusions."""
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 from src.domain.dietary import expand_terms
 
@@ -9,7 +9,11 @@ class HouseholdMember(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     name: str = Field(default="", max_length=100)
-    intolerances: str = Field(default="", max_length=1000)
+    foods_to_avoid: str = Field(
+        default="",
+        max_length=1000,
+        validation_alias=AliasChoices("foods_to_avoid", "intolerances"),
+    )
 
 
 class GuestGroup(BaseModel):
@@ -35,7 +39,11 @@ class Household(BaseModel):
     members: list[HouseholdMember] = Field(min_length=1, max_length=12)
     guest_groups: list[GuestGroup] = Field(default_factory=list, max_length=28)
     vegetarian: bool = False
-    dislikes: str = Field(default="", max_length=1000)
+    foods_to_avoid: str = Field(
+        default="",
+        max_length=1000,
+        validation_alias=AliasChoices("foods_to_avoid", "dislikes"),
+    )
 
     @model_validator(mode="after")
     def matching_size(self):
@@ -59,8 +67,11 @@ def exclusion_labels(settings: dict, meal_index: int | None = None) -> list[str]
     members = list(settings.get("members", []))
     if meal_index is not None:
         members.extend(meal_guests(settings, meal_index))
-    values = [settings.get("dislikes", "")]
-    values.extend(member.get("intolerances", "") for member in members)
+    values = [settings.get("foods_to_avoid", settings.get("dislikes", ""))]
+    values.extend(
+        member.get("foods_to_avoid", member.get("intolerances", ""))
+        for member in members
+    )
     return list(
         dict.fromkeys(
             word.strip()

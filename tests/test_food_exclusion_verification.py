@@ -1,10 +1,10 @@
-"""Intolerance checks cover recipes, computed needs, and explicit purchases."""
+"""Food exclusion checks cover recipes, computed needs, and explicit purchases."""
 
 import pytest
 
-from src.agents.intolerance_verification import (
-    IntoleranceConflict,
-    check_intolerances,
+from src.agents.food_exclusion_verification import (
+    FoodExclusionConflict,
+    check_food_exclusions,
 )
 from src.models.coordinator import GroceryAdd, RequestedMeal
 from src.models.groceries import GroceryRequirement
@@ -13,17 +13,17 @@ from src.ui.demo import DemoState
 from src.workflow.meal_request import build_meal_workflow
 
 
-def settings(intolerance):
+def settings(food_exclusion):
     return {
         "members": [
-            {"name": "Alice", "intolerances": ""},
-            {"name": "Bob", "intolerances": intolerance},
+            {"name": "Alice", "foods_to_avoid": ""},
+            {"name": "Bob", "foods_to_avoid": food_exclusion},
         ]
     }
 
 
 @pytest.mark.parametrize(
-    "intolerance,food",
+    "food_exclusion,food",
     [
         ("LACTOSE", "Mascarpone"),
         ("gluten", "Bread"),
@@ -32,7 +32,7 @@ def settings(intolerance):
     ],
 )
 @pytest.mark.parametrize("source", ["recipe", "requirement", "purchase"])
-def test_rejects_each_members_conflicts(intolerance, food, source):
+def test_rejects_each_members_conflicts(food_exclusion, food, source):
     ingredient = Ingredient(name=food, amount=100, unit="g", category="Épicerie")
     meals, groceries = [], []
     if source == "recipe":
@@ -64,14 +64,14 @@ def test_rejects_each_members_conflicts(intolerance, food, source):
         )
     else:
         groceries.append(GroceryAdd(service="grocery_add", **ingredient.model_dump()))
-    with pytest.raises(IntoleranceConflict):
-        check_intolerances(meals, groceries, settings(intolerance))
+    with pytest.raises(FoodExclusionConflict):
+        check_food_exclusions(meals, groceries, settings(food_exclusion))
 
 
-def test_compatible_food_and_empty_intolerances_pass():
+def test_compatible_food_and_empty_exclusions_pass():
     rice = Ingredient(name="Rice", amount=100, unit="g", category="Épicerie")
-    check_intolerances([], [rice], settings("gluten, lactose"))
-    check_intolerances([], [rice], {})
+    check_food_exclusions([], [rice], settings("gluten, lactose"))
+    check_food_exclusions([], [rice], {})
 
 
 def test_graph_verifies_existing_recipe_needs_on_purchase_only_path(qt_app):
@@ -97,13 +97,13 @@ def test_graph_verifies_existing_recipe_needs_on_purchase_only_path(qt_app):
         }
     )
     before = state.planning_context()
-    with pytest.raises(IntoleranceConflict):
+    with pytest.raises(FoodExclusionConflict):
         graph.invoke({"request": "Buy rice", "context": context})
     assert state.planning_context() == before
-    assert "intolerance_verification" in graph.get_graph().nodes
+    assert "food_exclusion_verification" in graph.get_graph().nodes
 
 
-def test_save_rechecks_current_intolerances_before_any_mutation(
+def test_save_rechecks_current_foods_to_avoid_before_any_mutation(
     qt_app, tmp_path, fake_recipes
 ):
     from test_meal_workflow import result_for
@@ -127,13 +127,13 @@ def test_save_rechecks_current_intolerances_before_any_mutation(
     state._settings.update(settings("lactose"))
     before = state.planning_context()
     saved = (tmp_path / "data" / "coordinator.json").read_bytes()
-    with pytest.raises(IntoleranceConflict):
+    with pytest.raises(FoodExclusionConflict):
         state.apply_execution(result)
     assert state.planning_context() == before
     assert (tmp_path / "data" / "coordinator.json").read_bytes() == saved
 
 
-def test_shared_exclusions_keep_intolerance_source_checks():
+def test_shared_exclusions_keep_food_exclusion_source_checks():
     milk = Ingredient(name="Milk", amount=100, unit="ml", category="Épicerie")
-    with pytest.raises(IntoleranceConflict):
-        check_intolerances([], [milk], {"dislikes": "lactose", "members": []})
+    with pytest.raises(FoodExclusionConflict):
+        check_food_exclusions([], [milk], {"foods_to_avoid": "lactose", "members": []})

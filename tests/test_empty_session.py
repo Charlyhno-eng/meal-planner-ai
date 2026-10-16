@@ -9,7 +9,7 @@ def test_empty_session_and_manual_inputs(qt_app):
     assert state.planning_context()["recipes"] == []
     assert state.pantry == state.meals == state.guests == state.groceries == []
     assert state.configure("2026-10-07", 3, 4, 2, True, "mushrooms")
-    assert state.settings["dislikes"] == "mushrooms"
+    assert state.settings["foods_to_avoid"] == "mushrooms"
     assert state.meals == state.groceries == []
     assert not state.replaceMeal(0)
     state.setGuests(0, 2)

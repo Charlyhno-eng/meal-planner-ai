@@ -1,5 +1,6 @@
 """Household profiles persist and constrain planning without partial updates."""
 
+import json
 from pathlib import Path
 
 import pytest
@@ -22,8 +23,8 @@ from src.ui import app
 from src.ui.demo import DemoState
 
 PROFILES = [
-    {"name": "Alice", "intolerances": "lactose"},
-    {"name": "Bob", "intolerances": "gluten, salmon"},
+    {"name": "Alice", "foods_to_avoid": "lactose"},
+    {"name": "Bob", "foods_to_avoid": "gluten, salmon"},
 ]
 
 
@@ -34,15 +35,50 @@ def test_profiles_persist_resize_and_remain_in_planning_context(qt_app, tmp_path
     restored = DemoState(config_path=path)
     assert restored.settings["members"] == PROFILES
     assert restored.settings["vegetarian"]
-    assert restored.settings["dislikes"] == "mushrooms"
+    assert restored.settings["foods_to_avoid"] == "mushrooms"
     assert restored.planning_context()["settings"]["members"] == PROFILES
     # A consumer cannot edit the live profiles through a returned settings map.
     restored.settings["members"][0]["name"] = "Changed"
     assert restored.settings["members"] == PROFILES
     assert restored.configure("2026-10-07", 7, 7, 3, True, "mushrooms")
-    assert restored.settings["members"] == PROFILES + [{"name": "", "intolerances": ""}]
+    assert restored.settings["members"] == PROFILES + [
+        {"name": "", "foods_to_avoid": ""}
+    ]
     assert restored.configure("2026-10-07", 7, 7, 1, True, "mushrooms")
     assert DemoState(config_path=path).settings["members"] == PROFILES[:1]
+
+
+def test_legacy_household_preferences_load_into_unified_food_lists(qt_app, tmp_path):
+    config_path = tmp_path / "config.toml"
+    household_path = tmp_path / "data" / "household.json"
+    household_path.parent.mkdir()
+    household_path.write_text(
+        json.dumps(
+            {
+                "people": 1,
+                "members": [{"name": "Alice", "intolerances": "lactose"}],
+                "guest_groups": [],
+                "vegetarian": False,
+                "dislikes": "mushrooms",
+            }
+        )
+    )
+
+    state = DemoState(config_path=config_path)
+
+    assert not state.householdError
+    assert state.settings["members"] == [{"name": "Alice", "foods_to_avoid": "lactose"}]
+    assert state.settings["foods_to_avoid"] == "mushrooms"
+    assert state.setHousehold(
+        state.settings["members"],
+        state.settings["vegetarian"],
+        state.settings["foods_to_avoid"],
+    )
+    saved = json.loads(household_path.read_text())
+    assert saved["members"] == [{"name": "Alice", "foods_to_avoid": "lactose"}]
+    assert saved["foods_to_avoid"] == "mushrooms"
+    assert "intolerances" not in household_path.read_text()
+    assert "dislikes" not in household_path.read_text()
 
 
 @pytest.mark.parametrize(
@@ -51,7 +87,7 @@ def test_profiles_persist_resize_and_remain_in_planning_context(qt_app, tmp_path
         [],
         PROFILES * 7,
         [{"name": "a" * 101}],
-        [{"name": "Alice", "intolerances": "x" * 1001}],
+        [{"name": "Alice", "foods_to_avoid": "x" * 1001}],
     ],
 )
 def test_invalid_profiles_preserve_state(qt_app, profiles):
@@ -73,7 +109,7 @@ def test_household_save_failure_preserves_profiles_and_file(
         raise OSError("read only")
 
     monkeypatch.setattr("src.storage.household.os.replace", fail)
-    assert not state.setHousehold([{"name": "New", "intolerances": ""}], False, "")
+    assert not state.setHousehold([{"name": "New", "foods_to_avoid": ""}], False, "")
     assert state.settings["members"] == PROFILES
     assert path.read_text() == previous
     assert list(path.parent.iterdir()) == [path]
@@ -90,7 +126,7 @@ def test_invalid_household_is_reported_and_not_overwritten(qt_app, tmp_path):
 
 
 @pytest.mark.parametrize("food", ["Mascarpone", "Bread", "Saumon"])
-def test_each_person_intolerance_rejects_recipes_and_purchases(qt_app, food):
+def test_each_person_food_exclusion_rejects_recipes_and_purchases(qt_app, food):
     state = DemoState()
     assert state.setHousehold(PROFILES, False, "")
     meal = RequestedMeal(
@@ -167,8 +203,8 @@ def test_household_dialog_edits_saves_and_cancels(qt_app, tmp_path, language):
             visual_child(content, "saveHousehold"), "clicked"
         )
         qt_app.processEvents()
-        assert state.settings["members"][0] == {"name": "Alice", "intolerances": ""}
-        assert state.settings["dislikes"] == "lactose"
+        assert state.settings["members"][0] == {"name": "Alice", "foods_to_avoid": ""}
+        assert state.settings["foods_to_avoid"] == "lactose"
         assert state.settings["members"][1]["name"] == "Bob"
         QMetaObject.invokeMethod(dialog, "open")
         QTest.qWait(200)
@@ -178,8 +214,8 @@ def test_household_dialog_edits_saves_and_cancels(qt_app, tmp_path, language):
         field.setProperty("text", "Discarded")
         QMetaObject.invokeMethod(field, "textEdited")
         QMetaObject.invokeMethod(dialog, "close")
-        assert state.settings["members"][0] == {"name": "Alice", "intolerances": ""}
-        assert state.settings["dislikes"] == "lactose"
+        assert state.settings["members"][0] == {"name": "Alice", "foods_to_avoid": ""}
+        assert state.settings["foods_to_avoid"] == "lactose"
         QMetaObject.invokeMethod(dialog, "open")
         QTest.qWait(200)
         people = visual_child(content, "householdPeople")
@@ -193,8 +229,8 @@ def test_household_dialog_edits_saves_and_cancels(qt_app, tmp_path, language):
         )
         QMetaObject.invokeMethod(button, "clicked")
         assert state.settings["people"] == 12
-        assert state.settings["members"][0] == {"name": "Alice", "intolerances": ""}
-        assert state.settings["dislikes"] == "lactose"
+        assert state.settings["members"][0] == {"name": "Alice", "foods_to_avoid": ""}
+        assert state.settings["foods_to_avoid"] == "lactose"
         assert not warnings, "\n".join(warnings)
     finally:
         window.close()
@@ -202,13 +238,13 @@ def test_household_dialog_edits_saves_and_cancels(qt_app, tmp_path, language):
         QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
 
 
-def test_catalogue_planning_preserves_profiles_and_checks_intolerances(
+def test_catalogue_planning_preserves_profiles_and_checks_foods_to_avoid(
     qt_app, sample_session, tmp_path
 ):
     from src.models.planning import PlanningProposal
 
     state = DemoState(config_path=tmp_path / "config.toml")
-    profiles = [{"name": "Alice", "intolerances": "salmon"}]
+    profiles = [{"name": "Alice", "foods_to_avoid": "salmon"}]
     assert state.setHousehold(profiles, False, "")
     settings = {key: value for key, value in state.settings.items() if key != "members"}
     settings["count"] = 1
@@ -315,11 +351,18 @@ def test_household_add_button_and_guest_dialog_work_without_meals(
         qt_app.processEvents()
         assert people.property("value") == 3
         assert visual_child(content, "memberName-2") is not None
-        field = visual_child(content, "memberIntolerances-0")
+        field = visual_child(content, "memberFoodsToAvoid-0")
+        assert field is not None
+        assert field.property("placeholderText") == (
+            "Aliments que cette personne ne veut pas manger (séparés par des virgules)"
+            if language == "fr"
+            else "Foods this person does not want to eat (comma-separated)"
+        )
+        assert visual_child(content, "memberIntolerances-0") is None
         field.setProperty("text", "lactose")
         QMetaObject.invokeMethod(field, "textEdited")
         QMetaObject.invokeMethod(visual_child(content, "saveHousehold"), "clicked")
-        assert state.settings["members"][0]["intolerances"] == "lactose"
+        assert state.settings["members"][0]["foods_to_avoid"] == "lactose"
         QTest.qWait(200)
         button = visual_child(window.contentItem(), "addGuestGroupButton")
         assert button.property("enabled")
@@ -332,7 +375,7 @@ def test_household_add_button_and_guest_dialog_work_without_meals(
             QMetaObject.invokeMethod(
                 visual_child(content, f"guestMeal-{index}"), "clicked"
             )
-        for name, value in [("guestName-0", "Eve"), ("guestIntolerances-0", "gluten")]:
+        for name, value in [("guestName-0", "Eve"), ("guestFoodsToAvoid-0", "gluten")]:
             field = visual_child(content, name)
             field.setProperty("text", value)
             QMetaObject.invokeMethod(field, "textEdited")
@@ -340,7 +383,7 @@ def test_household_add_button_and_guest_dialog_work_without_meals(
         assert not guest_dialog.property("visible")
         group = state.settings["guest_groups"][0]
         assert group["meals"] == [0, 2]
-        assert group["members"][0] == {"name": "Eve", "intolerances": "gluten"}
+        assert group["members"][0] == {"name": "Eve", "foods_to_avoid": "gluten"}
         QMetaObject.invokeMethod(guest_dialog, "open")
         QTest.qWait(200)
         QMetaObject.invokeMethod(guest_dialog, "close")
@@ -357,7 +400,7 @@ def test_guest_exclusions_reject_future_recipes_and_scale_workflow_groceries(qt_
 
     state = DemoState()
     assert state.addGuestGroup(
-        "Friends", [0], [{"name": "Eve", "intolerances": "lactose"}]
+        "Friends", [0], [{"name": "Eve", "foods_to_avoid": "lactose"}]
     )
     meal = RequestedMeal(
         title="Dish",

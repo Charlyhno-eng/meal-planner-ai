@@ -9,8 +9,11 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtTest import QTest
 from test_bootstrap import visual_child
 
+from src.agents.food_exclusion_verification import (
+    FoodExclusionConflict,
+    check_food_exclusions,
+)
 from src.agents.food_preferences import PreferenceConflict, check_preferences
-from src.agents.intolerance_verification import IntoleranceConflict, check_intolerances
 from src.agents.meal_planning import plan_meals
 from src.domain.dietary import conflicting_terms
 from src.models.coordinator import MealRequest, RequestedMeal
@@ -62,22 +65,22 @@ def run_workflow(state, actions, respond, progress=None):
 def guest_settings():
     return {
         "vegetarian": False,
-        "dislikes": "champignons",
-        "members": [{"name": "Alice", "intolerances": "oeufs"}],
+        "foods_to_avoid": "champignons",
+        "members": [{"name": "Alice", "foods_to_avoid": "oeufs"}],
         "guest_groups": [
             {
                 "name": "Friends",
                 "meals": [1],
                 "members": [
-                    {"name": "Bob", "intolerances": "gluten"},
-                    {"name": "Eve", "intolerances": ""},
+                    {"name": "Bob", "foods_to_avoid": "gluten"},
+                    {"name": "Eve", "foods_to_avoid": ""},
                 ],
             },
             {
                 "name": "Family",
                 "meals": [1, 2],
                 "members": [
-                    {"name": "Jo", "intolerances": "lactose"},
+                    {"name": "Jo", "foods_to_avoid": "lactose"},
                 ],
             },
         ],
@@ -87,32 +90,34 @@ def guest_settings():
 @pytest.mark.parametrize("label", ["oeufs", "Œufs", "œuf", "Egg", "eggs", "OEUFS"])
 @pytest.mark.parametrize("food", ["Œufs", "oeufs", "Eggs", "oeuf"])
 def test_egg_spellings_and_languages_are_equivalent(label, food):
-    assert conflicting_terms(food, excluded_terms({"dislikes": label}))
+    assert conflicting_terms(food, excluded_terms({"foods_to_avoid": label}))
 
 
 @pytest.mark.parametrize("food", ["Mushroom", "Champignon", "Champignons", "Mushrooms"])
 def test_mushroom_spellings_are_equivalent(food):
-    assert conflicting_terms(food, excluded_terms({"dislikes": "champignons"}))
+    assert conflicting_terms(food, excluded_terms({"foods_to_avoid": "champignons"}))
 
 
 def test_qualifiers_do_not_hide_ingredients_elsewhere():
-    settings = {"dislikes": "gluten, oeufs", "vegetarian": False}
+    settings = {"foods_to_avoid": "gluten, oeufs", "vegetarian": False}
     meal = requested("Pâtes sans gluten")
     meal.recipe.title = "Gluten-free egg-free pasta"
     meal.recipe.subtitle = "Gluten-free pasta without eggs"
     check_preferences([meal], settings)
-    check_intolerances([meal], meal.recipe.ingredients, settings)
+    check_food_exclusions([meal], meal.recipe.ingredients, settings)
     meal.recipe.ingredients.append(
         Ingredient(name="Eggs", amount=1, unit="pièce", category="Épicerie")
     )
     with pytest.raises(PreferenceConflict):
         check_preferences([meal], settings)
-    with pytest.raises(IntoleranceConflict):
-        check_intolerances([meal], [], settings)
+    with pytest.raises(FoodExclusionConflict):
+        check_food_exclusions([meal], [], settings)
     assert conflicting_terms("Pâtes sans gluten et pain", ["gluten", "oeufs"]) == [
         "pain"
     ]
-    assert not conflicting_terms("pain d’épices", excluded_terms({"dislikes": "riz"}))
+    assert not conflicting_terms(
+        "pain d’épices", excluded_terms({"foods_to_avoid": "riz"})
+    )
 
 
 def test_guest_restrictions_union_only_for_matching_meals():
@@ -128,11 +133,11 @@ def test_guest_restrictions_union_only_for_matching_meals():
     check_preferences([meal], settings, 2)
     with pytest.raises(PreferenceConflict):
         check_preferences([meal], settings, 1)
-    check_intolerances([meal], [], settings, 0)
-    with pytest.raises(IntoleranceConflict):
-        check_intolerances([meal], [], settings, 1)
+    check_food_exclusions([meal], [], settings, 0)
+    with pytest.raises(FoodExclusionConflict):
+        check_food_exclusions([meal], [], settings, 1)
     # Aggregated groceries include bread for a meal without the gluten-free guest.
-    check_intolerances([], meal.recipe.ingredients, settings)
+    check_food_exclusions([], meal.recipe.ingredients, settings)
 
 
 def test_planner_receives_explicit_constraints_before_first_generation(qt_app):
@@ -172,7 +177,7 @@ def test_planner_receives_explicit_constraints_before_first_generation(qt_app):
 def test_only_incompatible_recipe_is_adapted_and_saved(qt_app, tmp_path):
     state = DemoState(config_path=tmp_path / "config.toml")
     assert state.setHousehold(
-        [{"name": "Alice", "intolerances": "oeufs, champignons"}], False, ""
+        [{"name": "Alice", "foods_to_avoid": "oeufs, champignons"}], False, ""
     )
     calls, progress = [], []
     actions = [
@@ -220,7 +225,7 @@ def test_only_incompatible_recipe_is_adapted_and_saved(qt_app, tmp_path):
 
 def test_week_keeps_gluten_except_at_guest_meal_and_append_offsets(qt_app, tmp_path):
     state = DemoState(config_path=tmp_path / "config.toml")
-    profiles = [{"name": "Bob", "intolerances": "gluten"}, {"name": "Eve"}]
+    profiles = [{"name": "Bob", "foods_to_avoid": "gluten"}, {"name": "Eve"}]
     assert state.addGuestGroup("Friends", [1], profiles)
     calls = []
 
@@ -274,11 +279,11 @@ def test_adding_guest_only_checks_the_selected_existing_meal(qt_app):
 
     state.apply_execution(run_workflow(state, meal_actions(2), respond))
     assert state.addGuestGroup(
-        "Friend", [1], [{"name": "Bob", "intolerances": "gluten"}]
+        "Friend", [1], [{"name": "Bob", "foods_to_avoid": "gluten"}]
     )
     before = state.planning_context()
     assert not state.addGuestGroup(
-        "Other", [0], [{"name": "Eve", "intolerances": "gluten"}]
+        "Other", [0], [{"name": "Eve", "foods_to_avoid": "gluten"}]
     )
     assert state.planning_context() == before
 
@@ -289,7 +294,7 @@ def test_exhausted_adaptations_request_an_alternative_without_partial_save(
 ):
     state = DemoState()
     state.setLanguage(language)
-    assert state.setHousehold([{"name": "Alice", "intolerances": "eggs"}], False, "")
+    assert state.setHousehold([{"name": "Alice", "foods_to_avoid": "eggs"}], False, "")
     calls = []
 
     def respond(payload):
@@ -322,7 +327,7 @@ def test_save_checks_current_scoped_guest_rules(qt_app):
         lambda payload: {"recipes": [recipe("Dish 0", "Pain").model_dump()]},
     )
     assert state.addGuestGroup(
-        "Friend", [0], [{"name": "Bob", "intolerances": "gluten"}]
+        "Friend", [0], [{"name": "Bob", "foods_to_avoid": "gluten"}]
     )
     before = state.planning_context()
     with pytest.raises(PreferenceConflict):
@@ -334,9 +339,9 @@ def test_save_checks_current_scoped_guest_rules(qt_app):
 def test_interface_explains_meal_scopes(qt_app, tmp_path, language):
     state = DemoState(config_path=tmp_path / "config.toml")
     state.setLanguage(language)
-    assert state.setHousehold([{"name": "Alice", "intolerances": "oeufs"}], False, "")
+    assert state.setHousehold([{"name": "Alice", "foods_to_avoid": "oeufs"}], False, "")
     assert state.addGuestGroup(
-        "Friends", [1], [{"name": "Bob", "intolerances": "gluten"}]
+        "Friends", [1], [{"name": "Bob", "foods_to_avoid": "gluten"}]
     )
     engine = QQmlApplicationEngine()
     warnings = []
@@ -398,7 +403,7 @@ def test_repair_keeps_global_meal_index_after_an_existing_plan(qt_app, sample_se
     state = DemoState()
     offset = len(state.meals)
     assert state.addGuestGroup(
-        "Friend", [offset + 1], [{"name": "Bob", "intolerances": "gluten"}]
+        "Friend", [offset + 1], [{"name": "Bob", "foods_to_avoid": "gluten"}]
     )
     calls = []
 
@@ -432,7 +437,7 @@ def test_catalogue_validation_and_replacement_use_meal_scope(qt_app, sample_sess
     state = DemoState()
     # A future slot avoids conflicting with an already selected catalogue recipe.
     assert state.addGuestGroup(
-        "Friend", [7], [{"name": "Bob", "intolerances": "gluten"}]
+        "Friend", [7], [{"name": "Bob", "foods_to_avoid": "gluten"}]
     )
     settings = state.settings
     settings["count"] = 8
@@ -458,7 +463,7 @@ def test_catalogue_validation_and_replacement_use_meal_scope(qt_app, sample_sess
 
 def test_many_conflicts_still_produce_a_valid_clarification(qt_app):
     state = DemoState()
-    assert state.setHousehold([{"name": "Alice", "intolerances": "eggs"}], False, "")
+    assert state.setHousehold([{"name": "Alice", "foods_to_avoid": "eggs"}], False, "")
     actions = meal_actions(28)
     for action in actions:
         action["title"] = "Long requested dish " + "x" * 75

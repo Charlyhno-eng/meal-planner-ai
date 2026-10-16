@@ -90,7 +90,7 @@ ScrollView {
                         }
                         Caption {
                             Layout.fillWidth: true
-                            text: profile.modelData.intolerances
+                            text: profile.modelData.foods_to_avoid
                             visible: text.length > 0
                         }
                     }
@@ -122,7 +122,7 @@ ScrollView {
                         Layout.fillWidth: true
                         spacing: 10
                         Caption {
-                            text: I18n.tr("Aliments à éviter")
+                            text: I18n.tr("Aliments que le foyer ne veut pas manger")
                             font.pixelSize: 11
                             font.weight: Font.Medium
                         }
@@ -131,8 +131,8 @@ ScrollView {
                             Layout.fillWidth: true
                             editable: false
                             function refresh() {
-                                load([page.store.settings.dislikes].concat(
-                                    page.store.settings.members.map(member => member.intolerances)));
+                                load([page.store.settings.foods_to_avoid].concat(
+                                    page.store.settings.members.map(member => member.foods_to_avoid)));
                             }
                             Component.onCompleted: refresh()
                             Connections {
@@ -223,7 +223,7 @@ ScrollView {
                             required property var modelData
                             required property int index
                             Layout.fillWidth: true
-                            text: (modelData.name || I18n.tr("Personne ") + (index + 1)) + (modelData.intolerances ? " · " + modelData.intolerances : "")
+                            text: (modelData.name || I18n.tr("Personne ") + (index + 1)) + (modelData.foods_to_avoid ? " · " + modelData.foods_to_avoid : "")
                         }
                     }
                 }

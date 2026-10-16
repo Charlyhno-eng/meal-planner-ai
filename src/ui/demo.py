@@ -8,12 +8,12 @@ from pydantic import ValidationError
 from PySide6.QtCore import Property, QObject, Signal, Slot
 from PySide6.QtGui import QGuiApplication
 
+from src.agents.food_exclusion_verification import check_food_exclusions
 from src.agents.food_preferences import (
     PreferenceConflict,
     check_preferences,
 )
 from src.agents.grocery_list import calculate_groceries
-from src.agents.intolerance_verification import check_intolerances
 from src.domain.dietary import conflicting_terms
 from src.models.coordinator import (
     CoordinatorData,
@@ -105,9 +105,9 @@ class DemoState(QObject):
             "count": 7,
             "people": 2,
             "vegetarian": False,
-            "dislikes": "",
+            "foods_to_avoid": "",
             "guest_groups": [],
-            "members": [{"name": "", "intolerances": ""} for _ in range(2)],
+            "members": [{"name": "", "foods_to_avoid": ""} for _ in range(2)],
         }
         self._household_path = (
             config_path.parent / "data" / "household.json" if config_path else None
@@ -201,7 +201,7 @@ class DemoState(QObject):
                     "people",
                     "members",
                     "vegetarian",
-                    "dislikes",
+                    "foods_to_avoid",
                     "guest_groups",
                 )
             }
@@ -215,13 +215,15 @@ class DemoState(QObject):
         if execution.commands.clarification:
             raise ValueError("A clarification cannot be applied")
         check_preferences(execution.meals, self._settings, len(self.meals))
-        check_intolerances(self._generated_meals(), [], self._settings, len(self._plan))
+        check_food_exclusions(
+            self._generated_meals(), [], self._settings, len(self._plan)
+        )
         expected = calculate_execution_groceries(
             execution.commands, execution.meals, self.planning_context()
         )
         if expected != execution.groceries:
             raise ValueError("Grocery requirements differ from the current plan")
-        check_intolerances(
+        check_food_exclusions(
             execution.meals,
             [
                 *execution.groceries,
@@ -669,7 +671,9 @@ class DemoState(QObject):
         return self._groceries()
 
     @Slot(str, int, int, int, bool, str, result=bool)
-    def configure(self, start, days, count, people, vegetarian, dislikes, members=None):
+    def configure(
+        self, start, days, count, people, vegetarian, foods_to_avoid, members=None
+    ):
         try:
             date.fromisoformat(start)
         except ValueError:
@@ -683,7 +687,7 @@ class DemoState(QObject):
                 people=people,
                 vegetarian=vegetarian,
                 guest_groups=self._settings["guest_groups"],
-                dislikes=dislikes.strip(),
+                foods_to_avoid=foods_to_avoid.strip(),
                 members=(
                     members
                     if members is not None
@@ -734,14 +738,14 @@ class DemoState(QObject):
         return self.translate(self._household_error)
 
     @Slot("QVariantList", bool, str, result=bool)
-    def setHousehold(self, members, vegetarian, dislikes):
+    def setHousehold(self, members, vegetarian, foods_to_avoid):
         return self.configure(
             self._settings["start"],
             self._settings["days"],
             self._settings["count"],
             len(members),
             vegetarian,
-            dislikes,
+            foods_to_avoid,
             members=members,
         )
 

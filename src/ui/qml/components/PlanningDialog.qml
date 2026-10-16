@@ -14,7 +14,7 @@ Modal {
         meals.value = store.settings.count;
         people.value = store.settings.people;
         diet.currentIndex = store.settings.vegetarian ? 1 : 0;
-        dislikes.text = store.settings.dislikes;
+        foodsToAvoid.text = store.settings.foods_to_avoid;
     }
     contentItem: ScrollView {
         id: editor
@@ -82,13 +82,13 @@ Modal {
                 model: [I18n.tr("Variée"), I18n.tr("Végétarienne")]
             }
             Caption {
-                text: I18n.tr("Aliments exclus")
+                text: I18n.tr("Aliments que le foyer ne veut pas manger")
             }
             Field {
-                id: dislikes
+                id: foodsToAvoid
                 Layout.fillWidth: true
                 placeholderText: I18n.tr("Ex. champignons, saumon")
-                Accessible.name: I18n.tr("Aliments exclus, séparés par des virgules")
+                Accessible.name: I18n.tr("Aliments que le foyer ne veut pas manger")
             }
             Caption {
                 text: I18n.tr("Ces réglages serviront aux prochaines demandes. Pour créer des recettes, utilisez l’assistant. Les articles cochés seront réinitialisés.")
@@ -115,7 +115,7 @@ Modal {
                 primary: true
                 onClicked: if (dialog.store.configure(start.iso, days.value, meals.value,
                                                       people.value, diet.currentIndex === 1,
-                                                      dislikes.text))
+                                                      foodsToAvoid.text))
                                dialog.close()
             }
         }

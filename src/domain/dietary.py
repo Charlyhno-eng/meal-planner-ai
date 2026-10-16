@@ -5,7 +5,7 @@ import unicodedata
 
 from src.domain.foods import FOOD_NAMES
 
-INTOLERANCE_SOURCES = {
+EXCLUSION_SOURCES = {
     "gluten": (
         "blé",
         "wheat",
@@ -62,7 +62,7 @@ def expand_terms(values: list[str]) -> list[str]:
         normalized = {normalize(word) for word in group}
         if terms & normalized:
             terms.update(normalized)
-    for label, sources in INTOLERANCE_SOURCES.items():
+    for label, sources in EXCLUSION_SOURCES.items():
         if label in terms:
             terms.update(normalize(source) for source in sources)
     return sorted(terms)
@@ -77,7 +77,7 @@ def _matching_terms(text: str, excluded: list[str]) -> list[str]:
     conflicts = set()
     for phrase in re.split(r"[.;,\n]|\b(?:and|et)\b", normalize(text)):
         safe_sources = set()
-        for label, sources in INTOLERANCE_SOURCES.items():
+        for label, sources in EXCLUSION_SOURCES.items():
             if label in excluded and re.search(
                 rf"\b(?:sans|without|no) {label}\b|\b{label}[- ]free\b", phrase
             ):

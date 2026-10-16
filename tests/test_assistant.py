@@ -30,7 +30,7 @@ def proposal(**changes):
             "count": 2,
             "people": 3,
             "vegetarian": True,
-            "dislikes": "mushrooms",
+            "foods_to_avoid": "mushrooms",
         },
         "recipe_ids": [0, 2],
         "pantry_updates": [

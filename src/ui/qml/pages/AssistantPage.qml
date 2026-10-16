@@ -75,7 +75,7 @@ ScrollView {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 6
-            readonly property string householdFoods: [page.store.settings.dislikes].concat(page.store.settings.members.map(member => member.intolerances)).filter(value => value.length > 0).join(", ")
+            readonly property string householdFoods: [page.store.settings.foods_to_avoid].concat(page.store.settings.members.map(member => member.foods_to_avoid)).filter(value => value.length > 0).join(", ")
             visible: householdFoods.length > 0 || page.store.settings.guest_groups.length > 0
             Caption {
                 Layout.fillWidth: true
@@ -95,7 +95,7 @@ ScrollView {
                     required property int index
                     objectName: "guestDietarySummary-" + index
                     Layout.fillWidth: true
-                    text: (modelData.name || I18n.tr("Les invités")) + " · " + modelData.meals.map(i => I18n.tr("Repas ") + (i + 1)).join(", ") + " · " + modelData.members.map(member => (member.name || I18n.tr("Les invités")) + (member.intolerances ? " : " + member.intolerances : "")).join(" ; ")
+                    text: (modelData.name || I18n.tr("Les invités")) + " · " + modelData.meals.map(i => I18n.tr("Repas ") + (i + 1)).join(", ") + " · " + modelData.members.map(member => (member.name || I18n.tr("Les invités")) + (member.foods_to_avoid ? " : " + member.foods_to_avoid : "")).join(" ; ")
                 }
             }
         }

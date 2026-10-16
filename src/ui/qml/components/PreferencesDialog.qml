@@ -11,14 +11,14 @@ Modal {
     ListModel { id: members }
     function resizeMembers(count) {
         while (members.count < count)
-            members.append({name: "", intolerances: ""});
+            members.append({name: "", foodsToAvoid: ""});
         while (members.count > count)
             members.remove(members.count - 1);
     }
     function save() {
         const profiles = [];
         for (let i = 0; i < members.count; ++i)
-            profiles.push({name: members.get(i).name, intolerances: members.get(i).intolerances});
+            profiles.push({name: members.get(i).name, foods_to_avoid: members.get(i).foodsToAvoid});
         exclusions.addPending();
         if (store.setHousehold(profiles, vegetarian, exclusions.items.join(", ")))
             close();
@@ -26,11 +26,11 @@ Modal {
     onOpened: {
         members.clear();
         for (const member of store.settings.members)
-            members.append({name: member.name, intolerances: member.intolerances});
+            members.append({name: member.name, foodsToAvoid: member.foods_to_avoid});
         people.value = store.settings.people;
         resizeMembers(people.value);
         vegetarian = store.settings.vegetarian;
-        exclusions.load([store.settings.dislikes]);
+        exclusions.load([store.settings.foods_to_avoid]);
     }
     contentItem: ColumnLayout {
         spacing: 18
@@ -56,7 +56,7 @@ Modal {
                         id: memberRow
                         required property int index
                         required property string name
-                        required property string intolerances
+                        required property string foodsToAvoid
                         Layout.fillWidth: true
                         spacing: 6
                         Caption { text: I18n.tr("Personne ") + (memberRow.index + 1) }
@@ -70,12 +70,12 @@ Modal {
                             onTextEdited: members.setProperty(memberRow.index, "name", text)
                         }
                         Field {
-                            objectName: "memberIntolerances-" + memberRow.index
+                            objectName: "memberFoodsToAvoid-" + memberRow.index
                             Layout.fillWidth: true
-                            text: memberRow.intolerances
-                            placeholderText: I18n.tr("Intolérances et aliments à éviter (séparés par des virgules)")
+                            text: memberRow.foodsToAvoid
+                            placeholderText: I18n.tr("Aliments que cette personne ne veut pas manger (séparés par des virgules)")
                             maximumLength: 1000
-                            onTextEdited: members.setProperty(memberRow.index, "intolerances", text)
+                            onTextEdited: members.setProperty(memberRow.index, "foodsToAvoid", text)
                         }
                     }
                 }
@@ -99,10 +99,10 @@ Modal {
                         onClicked: dialog.vegetarian = true
                     }
                 }
-                Caption { text: I18n.tr("Aliments à éviter") }
+                Caption { text: I18n.tr("Aliments que le foyer ne veut pas manger") }
                 Caption {
                     Layout.fillWidth: true
-                    text: I18n.tr("Intolérances et aliments non souhaités : cette liste s’applique à tout le foyer.")
+                    text: I18n.tr("Cette liste s’applique à tout le foyer.")
                 }
                 FoodTags {
                     id: exclusions

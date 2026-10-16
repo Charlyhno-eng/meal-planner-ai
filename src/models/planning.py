@@ -3,7 +3,7 @@
 from datetime import date, timedelta
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 from src.domain.dietary import conflicting_terms
 from src.models.household import GuestGroup, HouseholdMember, exclusion_labels
@@ -17,7 +17,10 @@ class PlanningSettings(BaseModel):
     count: int = Field(ge=1, le=28)
     people: int = Field(ge=1, le=12)
     vegetarian: bool
-    dislikes: str = Field(max_length=1000)
+    foods_to_avoid: str = Field(
+        max_length=1000,
+        validation_alias=AliasChoices("foods_to_avoid", "dislikes"),
+    )
     members: list[HouseholdMember] = Field(default_factory=list, max_length=12)
 
     guest_groups: list[GuestGroup] = Field(default_factory=list, max_length=28)

@@ -15,8 +15,8 @@ the size or total quantity; the assistant uses the original request to continue.
 Set the planning period and household size for your meals.
 Record guests and dietary preferences for the household.
 In Household, use Edit to set the number of residents, add people, and enter each
-person’s name and comma-separated intolerances or disliked foods. The shared
-“Foods to avoid” list applies to everyone; add items with Enter or Add.
+person’s name and the foods they do not want to eat in one comma-separated list.
+The shared “Foods to avoid” list applies to everyone; add items with Enter or Add.
 Add guest groups even before generating meals. Select the meal numbers each group
 will attend and enter each guest’s name and foods to avoid. Repeat for different
 groups during the week. Groups are saved locally; selected meal numbers refer to
@@ -40,7 +40,7 @@ A deterministic verification agent checks proposed recipes and grocery requireme
 against the household foods to avoid before saving.
 It checks ingredients even when pantry stock covers them, using the shared
 French/English food vocabulary and common gluten and lactose ingredient sources.
-These text checks do not identify undeclared allergens in product labels.
+These text checks do not identify unlisted ingredients in product labels.
 Add grocery purchases and check them off while shopping.
 Removal buttons ask for confirmation before deleting pantry items, meals, grocery
 purchases, or guests. Cancel to keep the item.

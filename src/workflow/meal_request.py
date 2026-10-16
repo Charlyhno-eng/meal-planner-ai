@@ -7,9 +7,9 @@ from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
+from src.agents.food_exclusion_verification import check_food_exclusions
 from src.agents.food_preferences.agent import preference_conflicts
 from src.agents.grocery_list import calculate_groceries
-from src.agents.intolerance_verification import check_intolerances
 from src.agents.meal_planning import plan_meals
 from src.domain.foods import canonical_food
 from src.models.coordinator import CoordinatorProposal, RequestedMeal
@@ -238,16 +238,14 @@ def build_meal_workflow(
             }
         return {"groceries": requirements}
 
-    def verify_intolerances(state):
-        report(
-            "Vérification : recettes et courses comparées aux intolérances du foyer…"
-        )
+    def verify_food_exclusions(state):
+        report("Vérification : recettes et courses comparées aux aliments à éviter…")
         purchases = [
             action
             for action in state["commands"].actions
             if action.service == "grocery_add"
         ]
-        check_intolerances(
+        check_food_exclusions(
             [
                 RequestedMeal.model_validate(meal)
                 for meal in state["context"].get("planned_meals", [])
@@ -256,7 +254,7 @@ def build_meal_workflow(
             state["context"]["settings"],
             meal_offset=state["context"].get("catalogue_meal_count", 0),
         )
-        check_intolerances(
+        check_food_exclusions(
             state["meals"],
             [*state["groceries"], *purchases],
             state["context"]["settings"],
@@ -281,7 +279,7 @@ def build_meal_workflow(
         ("adapt_recipes", adapt),
         ("ask_alternative", ask_alternative),
         ("grocery_list", groceries),
-        ("intolerance_verification", verify_intolerances),
+        ("food_exclusion_verification", verify_food_exclusions),
         ("finish", finish),
     ):
         graph.add_node(name, node)
@@ -294,9 +292,11 @@ def build_meal_workflow(
     graph.add_conditional_edges(
         "grocery_list",
         lambda state: (
-            "finish" if state["commands"].clarification else "intolerance_verification"
+            "finish"
+            if state["commands"].clarification
+            else "food_exclusion_verification"
         ),
     )
-    graph.add_edge("intolerance_verification", "finish")
+    graph.add_edge("food_exclusion_verification", "finish")
     graph.add_edge("finish", END)
     return graph.compile()

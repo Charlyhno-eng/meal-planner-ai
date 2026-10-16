@@ -10,11 +10,11 @@ from src.models.household import exclusion_labels
 from src.models.recipes import Ingredient
 
 
-class IntoleranceConflict(PreferenceConflict):
-    """A recipe or grocery item conflicts with a household intolerance."""
+class FoodExclusionConflict(PreferenceConflict):
+    """A recipe or grocery item contains a food the household avoids."""
 
 
-def check_intolerances(
+def check_food_exclusions(
     meals: Iterable[RequestedMeal],
     groceries: Iterable[Ingredient | ShoppingItem | GroceryAdd],
     settings: dict,
@@ -23,15 +23,15 @@ def check_intolerances(
     """Reject conflicts, including recipe ingredients already covered by stock.
 
     Use the shared French/English vocabulary and gluten/lactose source mapping.
-    Legacy member intolerances and shared food exclusions are both checked.
+    Personal and household-wide food exclusions are both checked.
     """
 
     def verify(texts, excluded):
         if any(conflicting_terms(text, excluded) for text in texts):
-            raise IntoleranceConflict(
+            raise FoodExclusionConflict(
                 "Les recettes ou la liste de courses contiennent "
-                "un aliment incompatible "
-                "avec les intolérances du foyer. Précisez une variante et réessayez."
+                "un aliment que le foyer souhaite éviter. "
+                "Précisez une variante et réessayez."
             )
 
     for index, meal in enumerate(meals, meal_offset):
