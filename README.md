@@ -21,6 +21,8 @@ It checks ingredients even when pantry stock covers them, using the shared
 French/English food vocabulary and common gluten and lactose ingredient sources.
 These text checks do not identify undeclared allergens in product labels.
 Add grocery purchases and check them off while shopping.
+Removal buttons ask for confirmation before deleting pantry items, meals, grocery
+purchases, or guests. Cancel to keep the item.
 Household settings, recipes, and grocery purchases are stored locally.
 The desktop interface is available in English and French.
 AI recipes and clarification messages follow the selected application language,

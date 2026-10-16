@@ -155,3 +155,74 @@ def test_dialog_feedback_and_motion_preference(desktop, qt_app):
     QTest.keyClick(window, Qt.Key_Space)
     qt_app.processEvents()
     assert not button.property("checked")
+
+
+@pytest.mark.parametrize("page_index", [0, 2, 3])
+def test_removal_requires_confirmation(
+    sample_session, desktop, qt_app, fake_recipes, page_index
+):
+    from test_meal_workflow import result_for
+
+    from src.models.coordinator import CoordinatorProposal
+
+    state, window = desktop
+    if page_index == 0:
+        state.apply_execution(result_for(state, fake_recipes))
+
+        def remaining():
+            return len(state._coordinator_data.meals)
+    elif page_index == 2:
+        state.apply_commands(
+            CoordinatorProposal.model_validate(
+                {
+                    "actions": [
+                        {
+                            "service": "grocery_add",
+                            "name": "Quinoa",
+                            "amount": 120,
+                            "unit": "g",
+                            "category": "Épicerie",
+                        }
+                    ]
+                }
+            )
+        )
+
+        def remaining():
+            return len(state._coordinator_data.groceries)
+    else:
+        state.setGuests(0, 2)
+
+        def remaining():
+            return len(state.guests)
+
+    window.setProperty("currentPage", page_index)
+    qt_app.processEvents()
+    before = remaining()
+
+    def visible_remove(item):
+        if item.objectName() == "removeItemButton" and item.isVisible():
+            return item
+        for child in item.childItems():
+            found = visible_remove(child)
+            if found is not None:
+                return found
+        return None
+
+    button = visible_remove(window.contentItem())
+    assert button is not None
+    QMetaObject.invokeMethod(button, "clicked")
+    qt_app.processEvents()
+    assert remaining() == before
+    # Popups live in the window overlay, outside the page's visual tree.
+    dialogs = window.findChildren(QObject, "removalDialog")
+    dialog = next(item for item in dialogs if item.property("visible"))
+    cancel = visual_child(dialog.property("contentItem"), "cancelRemovalButton")
+    QMetaObject.invokeMethod(cancel, "clicked")
+    assert remaining() == before
+    QMetaObject.invokeMethod(button, "clicked")
+    qt_app.processEvents()
+    confirm = visual_child(dialog.property("contentItem"), "confirmRemovalButton")
+    QMetaObject.invokeMethod(confirm, "clicked")
+    qt_app.processEvents()
+    assert remaining() == before - 1

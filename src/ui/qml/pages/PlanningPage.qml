@@ -5,6 +5,11 @@ import "../components"
 
 ScrollView {
     id: page
+    RemovalDialog {
+        id: removalDialog
+        onConfirmed: function(recordId) { page.store.removeRequest(recordId); }
+    }
+    onVisibleChanged: if (!visible) removalDialog.close()
     required property var store
     signal configureRequested
     signal recipeRequested(int mealId)
@@ -111,7 +116,8 @@ ScrollView {
                         ActionButton {
                             text: I18n.tr("Retirer")
                             quiet: true
-                            onClicked: page.store.removeRequest(modelData.id)
+                            objectName: "removeItemButton"
+                            onClicked: removalDialog.request(modelData.id, modelData.title)
                         }
                     }
                 }
@@ -207,7 +213,8 @@ ScrollView {
                             visible: !!mealCard.modelData.requestId
                             text: I18n.tr("Retirer")
                             quiet: true
-                            onClicked: page.store.removeRequest(mealCard.modelData.requestId)
+                            objectName: "removeItemButton"
+                            onClicked: removalDialog.request(mealCard.modelData.requestId, mealCard.modelData.title)
                         }
                     }
                 }

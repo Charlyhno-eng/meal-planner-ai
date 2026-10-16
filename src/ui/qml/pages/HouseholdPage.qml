@@ -5,6 +5,11 @@ import "../components"
 
 ScrollView {
     id: page
+    RemovalDialog {
+        id: removalDialog
+        onConfirmed: function(recordId) { page.store.setGuests(recordId, 0); }
+    }
+    onVisibleChanged: if (!visible) removalDialog.close()
     required property var store
     signal preferencesRequested
     signal guestRequested
@@ -199,7 +204,8 @@ ScrollView {
                         text: I18n.tr("Retirer")
                         quiet: true
                         destructive: true
-                        onClicked: page.store.setGuests(guestRow.modelData.id, 0)
+                        objectName: "removeItemButton"
+                        onClicked: removalDialog.request(guestRow.modelData.id, guestRow.modelData.title)
                     }
                 }
             }

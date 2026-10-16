@@ -5,6 +5,11 @@ import "../components"
 
 ColumnLayout {
     id: page
+    RemovalDialog {
+        id: removalDialog
+        onConfirmed: function(recordId) { page.store.removeRequest(recordId); }
+    }
+    onVisibleChanged: if (!visible) removalDialog.close()
     required property var store
     signal assistantRequested
     signal pantryRequested
@@ -217,7 +222,8 @@ ColumnLayout {
                                     visible: !!groceryRow.modelData.requestId
                                     text: I18n.tr("Retirer")
                                     quiet: true
-                                    onClicked: page.store.removeRequest(groceryRow.modelData.requestId)
+                                    objectName: "removeItemButton"
+                                    onClicked: removalDialog.request(groceryRow.modelData.requestId, groceryRow.modelData.name)
                                 }
                             }
                         }
