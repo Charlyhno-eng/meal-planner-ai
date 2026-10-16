@@ -71,27 +71,6 @@ ScrollView {
         }
         Panel {
             Layout.fillWidth: true
-            implicitHeight: appearance.implicitHeight + 40
-            ColumnLayout {
-                id: appearance
-                anchors.fill: parent
-                anchors.margins: 20
-                spacing: 12
-                Heading { text: I18n.tr("Confort de lecture") }
-                Chip {
-                    objectName: "reduceMotionButton"
-                    text: I18n.tr("Réduire les animations")
-                    checked: Theme.reducedMotion
-                    onClicked: Theme.reducedMotion = !Theme.reducedMotion
-                }
-                Caption {
-                    Layout.fillWidth: true
-                    text: I18n.tr("Désactive les transitions et les mouvements de la carte IA pour cette session.")
-                }
-            }
-        }
-        Panel {
-            Layout.fillWidth: true
             id: voicePanel
             implicitHeight: voiceContent.implicitHeight + 48
             ColumnLayout {

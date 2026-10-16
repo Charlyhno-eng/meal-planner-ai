@@ -119,7 +119,7 @@ def test_food_quantity_validation_matches_storage_limits(desktop, qt_app):
     assert state.pantry[0]["amount"] == 1.5
 
 
-def test_dialog_feedback_and_motion_preference(desktop, qt_app):
+def test_dialog_feedback_and_agent_animation_control(desktop, qt_app):
     state, window = desktop
     dialog = window.findChild(QObject, "planningDialog")
     QMetaObject.invokeMethod(dialog, "open")
@@ -137,24 +137,16 @@ def test_dialog_feedback_and_motion_preference(desktop, qt_app):
     QTest.keyClick(window, Qt.Key_Escape)
 
     window.setProperty("currentPage", 4)
-    button = visual_child(window.contentItem(), "reduceMotionButton")
-    button.forceActiveFocus()
-    QTest.keyClick(window, Qt.Key_Space)
-    qt_app.processEvents()
-    assert button.property("checked")
+    assert window.findChild(QObject, "reduceMotionButton") is None
     window.setProperty("currentPage", 6)
     qt_app.processEvents()
     toggle = visual_child(window.contentItem(), "agentAnimationToggle")
-    assert not toggle.property("enabled")
+    assert toggle.property("enabled")
+    QMetaObject.invokeMethod(toggle, "clicked")
     pulse = visual_child(window.contentItem(), "agentFlowPulse0")
     before = pulse.property("progress")
     QTest.qWait(100)
     assert pulse.property("progress") == before
-    window.setProperty("currentPage", 4)
-    button.forceActiveFocus()
-    QTest.keyClick(window, Qt.Key_Space)
-    qt_app.processEvents()
-    assert not button.property("checked")
 
 
 @pytest.mark.parametrize("page_index", [0, 2, 3])

@@ -215,7 +215,7 @@ ApplicationWindow {
             Layout.fillHeight: true
             Layout.bottomMargin: 24
             currentIndex: window.currentPage
-            onCurrentIndexChanged: if (!Theme.reducedMotion) pageReveal.restart()
+            onCurrentIndexChanged: pageReveal.restart()
             NumberAnimation {
                 id: pageReveal
                 target: pages
