@@ -16,6 +16,9 @@ These text checks do not identify undeclared allergens in product labels.
 Add grocery purchases and check them off while shopping.
 Household settings, recipes, and grocery purchases are stored locally.
 The desktop interface is available in English and French.
+AI recipes and clarification messages follow the selected application language,
+even when the request is written in the other language. If the language changes
+while a request is running, submit it again to generate text in the new language.
 AI meal planning uses a GLM API key saved in Settings.
 
 ---

@@ -287,6 +287,11 @@ class PlanningAssistant(QObject):
         self._job = None
         self._proposal = None
         self._error = error
+        if not error and not self._context_matches():
+            self._error = "Les données ont changé. Envoyez à nouveau votre demande."
+            self._status = "Traitement interrompu. Aucun changement n’a été enregistré."
+            self.changed.emit()
+            return
         if not error:
             if isinstance(proposal, MealExecution):
                 if proposal.commands.clarification:
@@ -350,12 +355,8 @@ class PlanningAssistant(QObject):
     def _context_matches(self):
         if self._context is None:
             return True
-        # Switching interface language does not change ingredient quantities or dates.
-        previous = {k: v for k, v in self._context.items() if k != "language"}
-        current = {
-            k: v for k, v in self.store.planning_context().items() if k != "language"
-        }
-        return previous == current
+        # Generated prose belongs to the language of the request snapshot.
+        return self._context == self.store.planning_context()
 
     @Slot()
     def discard(self):
