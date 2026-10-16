@@ -68,12 +68,13 @@ def test_graph_separates_agents_and_subtracts_stock(qt_app, fake_recipes):
         60,
         40,
     )
-    assert len(steps) == 5
+    assert len(steps) == 6
     assert steps[0].startswith("GLM : envoi")
     assert steps[1].startswith("GLM a répondu")
     assert steps[2].startswith("Planification")
     assert steps[3].startswith("Préférences")
     assert steps[4].startswith("Courses")
+    assert steps[5].startswith("Vérification")
     state.apply_execution(result)
     assert state.meals[0]["title"] == "Tiramisu"
     assert state.requestedMeals == []

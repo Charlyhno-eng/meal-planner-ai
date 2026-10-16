@@ -8,6 +8,11 @@ Set the planning period and household size for your meals.
 Record guests and dietary preferences for the household.
 Ask the assistant to create meals and recipes from a written request.
 Review recipes and see which ingredients are available or need buying.
+A deterministic verification agent checks proposed recipes and grocery requirements
+against every household member's comma-separated intolerances before saving.
+It checks ingredients even when pantry stock covers them, using the shared
+French/English food vocabulary and common gluten and lactose ingredient sources.
+These text checks do not identify undeclared allergens in product labels.
 Add grocery purchases and check them off while shopping.
 Household settings, recipes, and grocery purchases are stored locally.
 The desktop interface is available in English and French.

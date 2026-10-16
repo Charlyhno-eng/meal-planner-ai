@@ -411,5 +411,7 @@
   "Terminer les courses": "Finish shopping",
   "Terminez les courses pour ajouter les articles cochés à votre réserve.": "Finish shopping to add checked items to your pantry.",
   "Articles cochés ajoutés à la réserve": "Checked items added to the pantry",
-  "La quantité en réserve dépasserait 100 000.": "The pantry quantity would exceed 100,000."
+  "La quantité en réserve dépasserait 100 000.": "The pantry quantity would exceed 100,000.",
+  "Vérification : recettes et courses comparées aux intolérances du foyer…": "Verification: checking recipes and groceries against household intolerances…",
+  "Les recettes ou la liste de courses contiennent un aliment incompatible avec les intolérances du foyer. Précisez une variante et réessayez.": "The recipes or grocery list contain food that conflicts with household intolerances. Specify an alternative and try again."
 }

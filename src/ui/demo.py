@@ -13,6 +13,7 @@ from src.agents.food_preferences import (
     check_preferences,
 )
 from src.agents.grocery_list import calculate_groceries
+from src.agents.intolerance_verification import check_intolerances
 from src.models.coordinator import (
     CoordinatorData,
     CoordinatorProposal,
@@ -205,6 +206,14 @@ class DemoState(QObject):
         )
         if expected != execution.groceries:
             raise ValueError("Grocery requirements differ from the current plan")
+        check_intolerances(
+            execution.meals,
+            [
+                *execution.groceries,
+                *(a for a in execution.commands.actions if a.service == "grocery_add"),
+            ],
+            self._settings,
+        )
         self.apply_commands(execution.commands, planned_meals=execution.meals)
 
     def apply_commands(self, proposal: CoordinatorProposal, planned_meals=None):

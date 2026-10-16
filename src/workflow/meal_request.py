@@ -1,4 +1,4 @@
-"""Desktop graph: coordinator → meal planning → preferences → groceries.
+"""Desktop graph: coordinator → planning → preferences → groceries → verification.
 
 All nodes work on a snapshot. Only the UI service persists a successful result.
 """
@@ -9,6 +9,7 @@ from langgraph.graph import END, START, StateGraph
 
 from src.agents.food_preferences import check_preferences
 from src.agents.grocery_list import calculate_groceries
+from src.agents.intolerance_verification import check_intolerances
 from src.agents.meal_planning import plan_meals
 from src.models.coordinator import CoordinatorProposal, RequestedMeal
 from src.models.execution import MealExecution
@@ -104,6 +105,22 @@ def build_meal_workflow(
             )
         }
 
+    def verify_intolerances(state):
+        report(
+            "Vérification : recettes et courses comparées aux intolérances du foyer…"
+        )
+        purchases = [
+            action
+            for action in state["commands"].actions
+            if action.service == "grocery_add"
+        ]
+        check_intolerances(
+            state["meals"],
+            [*state["groceries"], *purchases],
+            state["context"]["settings"],
+        )
+        return {}
+
     def finish(state):
         return {
             "result": MealExecution(
@@ -119,6 +136,7 @@ def build_meal_workflow(
         ("meal_planning", planning),
         ("food_preferences", preferences),
         ("grocery_list", groceries),
+        ("intolerance_verification", verify_intolerances),
         ("finish", finish),
     ):
         graph.add_node(name, node)
@@ -126,6 +144,7 @@ def build_meal_workflow(
     graph.add_conditional_edges("coordinator", route)
     graph.add_edge("meal_planning", "food_preferences")
     graph.add_edge("food_preferences", "grocery_list")
-    graph.add_edge("grocery_list", "finish")
+    graph.add_edge("grocery_list", "intolerance_verification")
+    graph.add_edge("intolerance_verification", "finish")
     graph.add_edge("finish", END)
     return graph.compile()
