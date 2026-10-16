@@ -4,6 +4,13 @@
 
 Meal Planner AI helps households plan meals and prepare grocery lists.
 Add pantry items to track food already available at home.
+For packaged foods, tell the assistant the package size or total weight/volume
+(for example, two 250 g tubs of mascarpone means 500 g). It asks for a size
+rather than assuming a standard package. If existing pantry stock is in pieces
+but a recipe needs grams or millilitres, planning asks for clarification before
+saving meals or purchases when that stock could cover a shortfall. Reply with
+the size or total quantity; the assistant uses the original request to continue.
+Naturally countable foods such as eggs can still be recorded in pieces.
 Set the planning period and household size for your meals.
 Record guests and dietary preferences for the household.
 Ask the assistant to create meals and recipes from a written request.

@@ -11,10 +11,12 @@ from src.agents.food_preferences import check_preferences
 from src.agents.grocery_list import calculate_groceries
 from src.agents.intolerance_verification import check_intolerances
 from src.agents.meal_planning import plan_meals
+from src.domain.foods import canonical_food
 from src.models.coordinator import CoordinatorProposal, RequestedMeal
 from src.models.execution import MealExecution
 from src.models.groceries import GroceryRequirement
 from src.models.recipes import Ingredient
+from src.ui.i18n import translate_food
 from src.workflow.coordinator import build_coordinator_workflow
 
 
@@ -28,9 +30,8 @@ class MealWorkflowState(TypedDict, total=False):
     result: MealExecution
 
 
-def calculate_execution_groceries(
-    commands: CoordinatorProposal, meals: list[RequestedMeal], context: dict
-) -> list[GroceryRequirement]:
+def execution_pantry(commands: CoordinatorProposal, context: dict) -> list[dict]:
+    """Overlay absolute stock corrections before comparing recipe requirements."""
     pantry = [item.copy() for item in context["pantry"]]
     for action in commands.actions:
         if action.service != "pantry_set":
@@ -49,6 +50,13 @@ def calculate_execution_groceries(
             pantry.append(food)
         else:
             existing.update(food)
+    return pantry
+
+
+def calculate_execution_groceries(
+    commands: CoordinatorProposal, meals: list[RequestedMeal], context: dict
+) -> list[GroceryRequirement]:
+    pantry = execution_pantry(commands, context)
     ingredients = [
         Ingredient.model_validate(item)
         for item in context.get("planned_ingredients", [])
@@ -99,11 +107,44 @@ def build_meal_workflow(
         report(
             "Courses : calcul des besoins et déduction des quantités déjà en réserve…"
         )
-        return {
-            "groceries": calculate_execution_groceries(
-                state["commands"], state["meals"], state["context"]
+        requirements = calculate_execution_groceries(
+            state["commands"], state["meals"], state["context"]
+        )
+        pantry = execution_pantry(state["commands"], state["context"])
+        ambiguous = [
+            need
+            for need in requirements
+            if need.unit in ("g", "ml")
+            and need.amount > 0
+            and any(
+                canonical_food(item["name"]).casefold() == need.name.casefold()
+                and item["unit"] == "pièce"
+                and item["amount"] > 0
+                for item in pantry
             )
-        }
+        ]
+        if ambiguous:
+            language = state["context"].get("language", "fr")
+            foods = ", ".join(
+                f"{translate_food(need.name, language)} ({need.required:g} {need.unit})"
+                for need in ambiguous[:3]
+            )
+            question = (
+                f"The recipes require {foods}, but your pantry lists these foods "
+                "as pieces or packages. What is the weight or volume per package, "
+                "or the total available in g or ml? No package size will be assumed."
+                if language == "en"
+                else f"Les recettes nécessitent {foods}, mais ces aliments sont "
+                "en réserve "
+                "en pièces ou en pots. Quel est le poids ou le volume par contenant, "
+                "ou le total disponible en g ou ml ? Aucun format ne sera supposé."
+            )
+            return {
+                "commands": CoordinatorProposal(clarification=question),
+                "meals": [],
+                "groceries": [],
+            }
+        return {"groceries": requirements}
 
     def verify_intolerances(state):
         report(
@@ -144,7 +185,12 @@ def build_meal_workflow(
     graph.add_conditional_edges("coordinator", route)
     graph.add_edge("meal_planning", "food_preferences")
     graph.add_edge("food_preferences", "grocery_list")
-    graph.add_edge("grocery_list", "intolerance_verification")
+    graph.add_conditional_edges(
+        "grocery_list",
+        lambda state: (
+            "finish" if state["commands"].clarification else "intolerance_verification"
+        ),
+    )
     graph.add_edge("intolerance_verification", "finish")
     graph.add_edge("finish", END)
     return graph.compile()
