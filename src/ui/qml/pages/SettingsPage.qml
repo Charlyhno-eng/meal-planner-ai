@@ -20,45 +20,6 @@ ScrollView {
         spacing: 20
         Panel {
             Layout.fillWidth: true
-            implicitHeight: content.implicitHeight + 48
-            ColumnLayout {
-                id: content
-                anchors.fill: parent
-                anchors.margins: 24
-                spacing: 18
-                Heading {
-                    text: I18n.tr("Langue de l’application")
-                    Layout.fillWidth: true
-                }
-                Caption {
-                    text: I18n.tr("L’interface et les recettes changent de langue immédiatement.")
-                    Layout.fillWidth: true
-                }
-                RowLayout {
-                    spacing: 10
-                    Chip {
-                        objectName: "languageFrench"
-                        text: "Français"
-                        checked: page.store.language === "fr"
-                        onClicked: page.store.setLanguage("fr")
-                    }
-                    Chip {
-                        objectName: "languageEnglish"
-                        text: "English"
-                        checked: page.store.language === "en"
-                        onClicked: page.store.setLanguage("en")
-                    }
-                }
-                Caption {
-                    text: page.store.configError
-                    visible: text.length > 0
-                    color: Theme.danger
-                    Layout.fillWidth: true
-                }
-            }
-        }
-        Panel {
-            Layout.fillWidth: true
             implicitHeight: glmContent.implicitHeight + 48
             ColumnLayout {
                 id: glmContent

@@ -1,10 +1,11 @@
-"""Language persistence and translations preserve the preview's data identities."""
+"""System language detection and translation coverage for the desktop UI."""
 
-import tomllib
+import re
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
-from PySide6.QtCore import QCoreApplication, QEvent, QMetaObject, QObject, QPoint, Qt
+from PySide6.QtCore import QCoreApplication, QEvent, QMetaObject, QObject
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtTest import QTest
 from sample_data import RECIPES
@@ -12,56 +13,60 @@ from test_bootstrap import visual_child
 
 from src.ui import app
 from src.ui.demo import DemoState
-from src.ui.i18n import ENGLISH
-
-
-def test_language_persists_and_restores(tmp_path):
-    path = tmp_path / "config.toml"
-    demo = DemoState(config_path=path)
-    assert demo.language == "fr"
-    assert tomllib.loads(path.read_text()) == {"application": {"language": "fr"}}
-    assert demo.setLanguage("en")
-    restored = DemoState(config_path=path)
-    assert restored.language == "en"
-    assert restored.meals[0]["title"] == "Roasted vegetable bowl"
-    assert not restored.setLanguage("de")
-    assert tomllib.loads(path.read_text())["application"]["language"] == "en"
+from src.ui.i18n import ENGLISH, system_language
 
 
 @pytest.mark.parametrize(
-    "content",
+    "tags,expected",
     [
-        "[invalid",
-        '[application]\nlanguage = "de"',
-        "application = []",
+        (["fr-FR"], "fr"),
+        (["fr-CA"], "fr"),
+        (["en-US"], "en"),
+        (["en_GB"], "en"),
+        (["de-DE", "fr-CH", "en-US"], "fr"),
+        (["en-AU", "fr-FR"], "en"),
+        (["de-DE"], "en"),
+        ([], "en"),
     ],
 )
-def test_invalid_config_uses_french_without_overwriting_file(tmp_path, content):
+def test_system_ui_language_preference_order(monkeypatch, tags, expected):
+    monkeypatch.setattr(
+        "src.ui.i18n.QLocale",
+        SimpleNamespace(system=lambda: SimpleNamespace(uiLanguages=lambda: tags)),
+    )
+    assert system_language() == expected
+
+
+@pytest.mark.parametrize("language", ["fr", "en"])
+@pytest.mark.parametrize(
+    "content", [None, '[application]\nlanguage = "fr"', "[invalid"]
+)
+def test_startup_uses_system_language_without_reading_or_writing_preference(
+    tmp_path, monkeypatch, language, content
+):
     path = tmp_path / "config.toml"
-    path.write_text(content)
-    demo = DemoState(config_path=path)
-    assert demo.language == "fr"
-    assert demo.configError
-    assert path.read_text() == content
-    assert demo.setLanguage("en")
-    assert not demo.configError
-    assert tomllib.loads(path.read_text())["application"]["language"] == "en"
+    if content is not None:
+        path.write_text(content)
+    monkeypatch.setattr("src.ui.demo.system_language", lambda: language)
+    state = DemoState(config_path=path)
+    assert state.language == language
+    assert state.planning_context()["language"] == language
+    if content is None:
+        assert not path.exists()
+    else:
+        assert path.read_text() == content
 
 
-def test_failed_save_preserves_previous_language_and_config(tmp_path, monkeypatch):
-    path = tmp_path / "config.toml"
-    demo = DemoState(config_path=path)
-    previous = path.read_text()
-
-    def fail_replace(*args):
-        raise PermissionError("Read-only directory")
-
-    monkeypatch.setattr("src.storage.config.os.replace", fail_replace)
-    assert not demo.setLanguage("en")
-    assert demo.language == "fr"
-    assert demo.configError
-    assert path.read_text() == previous
-    assert list(tmp_path.iterdir()) == [path]
+def test_qml_translation_literals_have_english_entries():
+    qml = Path(app.__file__).parent / "qml"
+    missing = set()
+    for path in qml.rglob("*.qml"):
+        # Include literals in conditional expressions inside translation calls.
+        for call in re.findall(r"I18n\.tr\(([^)]*)\)", path.read_text()):
+            for source in re.findall(r'"([^"\n]*)"', call):
+                if source not in ENGLISH:
+                    missing.add(source)
+    assert not missing, f"Missing English translations: {sorted(missing)}"
 
 
 def test_all_recipe_content_is_translated_and_state_survives_language_change(qt_app):
@@ -107,11 +112,11 @@ def test_all_recipe_content_is_translated_and_state_survives_language_change(qt_
 
 
 @pytest.mark.parametrize("initial_language", ["fr", "en"])
-def test_settings_switches_every_screen_and_dialog_without_qml_warnings(
-    qt_app, tmp_path, initial_language
+def test_system_language_translates_every_screen_and_dialog_without_qml_warnings(
+    qt_app, tmp_path, monkeypatch, initial_language
 ):
     path = tmp_path / "config.toml"
-    DemoState(config_path=path).setLanguage(initial_language)
+    monkeypatch.setattr("src.ui.demo.system_language", lambda: initial_language)
     demo = DemoState(config_path=path)
     engine = QQmlApplicationEngine()
     warnings = []
@@ -130,21 +135,17 @@ def test_settings_switches_every_screen_and_dialog_without_qml_warnings(
     try:
         window.setProperty("currentPage", 4)
         QTest.qWait(20)
-        english = visual_child(window.contentItem(), "languageEnglish")
-        position = english.mapToScene(QPoint(20, 20))
-        QTest.mouseClick(window, Qt.LeftButton, Qt.NoModifier, position.toPoint())
+        assert visual_child(window.contentItem(), "languageEnglish") is None
+        assert visual_child(window.contentItem(), "languageFrench") is None
+        demo.setLanguage("en")
         qt_app.processEvents()
-        assert demo.language == "en"
-        assert window.property("pageTitles").toVariant() == [
-            "My meals",
-            "My pantry",
-            "My groceries",
-            "My household",
-            "Settings",
-            "Plan with AI",
-            "AI interactions",
-        ]
-        assert tomllib.loads(path.read_text())["application"]["language"] == "en"
+        assert window.property("pageTitles").toVariant()[4] == "Settings"
+        window.setProperty("currentPage", 3)
+        qt_app.processEvents()
+        assert (
+            visual_child(window.contentItem(), "addExcludedFood").property("text")
+            == "Add"
+        )
         for index in range(7):
             window.setProperty("currentPage", index)
             qt_app.processEvents()
@@ -171,9 +172,7 @@ def test_settings_switches_every_screen_and_dialog_without_qml_warnings(
             == "Time to cook"
         )
         window.setProperty("currentPage", 4)
-        french = visual_child(window.contentItem(), "languageFrench")
-        position = french.mapToScene(QPoint(20, 20))
-        QTest.mouseClick(window, Qt.LeftButton, Qt.NoModifier, position.toPoint())
+        demo.setLanguage("fr")
         qt_app.processEvents()
         assert demo.language == "fr"
         assert (

@@ -83,3 +83,9 @@ def fake_recipes(monkeypatch):
 
     monkeypatch.setattr("src.agents.meal_planning.agent.complete_json", respond)
     return respond
+
+
+@pytest.fixture(autouse=True)
+def stable_system_language(monkeypatch):
+    """Keep UI expectations independent of the test runner’s OS language."""
+    monkeypatch.setattr("src.ui.demo.system_language", lambda: "fr")

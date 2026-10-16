@@ -27,10 +27,13 @@ Add grocery purchases and check them off while shopping.
 Removal buttons ask for confirmation before deleting pantry items, meals, grocery
 purchases, or guests. Cancel to keep the item.
 Household settings, recipes, and grocery purchases are stored locally.
-The desktop interface is available in English and French.
-AI recipes and clarification messages follow the selected application language,
-even when the request is written in the other language. If the language changes
-while a request is running, submit it again to generate text in the new language.
+The desktop interface automatically follows the operating system’s preferred UI
+languages at startup, using the first supported language (English or French).
+If neither is supported, it uses English. No language setting is needed; any old
+language preference in `config.toml` is ignored. Restart the app after changing
+the system language.
+AI recipes and clarification messages follow the detected application language,
+even when the request is written in the other language.
 AI meal planning uses a GLM API key saved in Settings.
 
 ---

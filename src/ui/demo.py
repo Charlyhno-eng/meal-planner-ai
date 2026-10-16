@@ -31,14 +31,18 @@ from src.models.planning import (
 from src.models.recipes import Ingredient
 from src.storage.config import (
     load_glm_key,
-    load_language,
     save_glm_key,
-    save_language,
 )
 from src.storage.coordinator import load_coordinator, save_coordinator
 from src.storage.household import load_household, save_household
 from src.ui.assistant import PlanningAssistant
-from src.ui.i18n import ENGLISH, canonical_food, translate, translate_food
+from src.ui.i18n import (
+    ENGLISH,
+    canonical_food,
+    system_language,
+    translate,
+    translate_food,
+)
 from src.workflow.coordinator import build_coordinator_workflow
 from src.workflow.meal_request import calculate_execution_groceries
 
@@ -77,16 +81,7 @@ class DemoState(QObject):
 
     def __init__(self, parent=None, config_path: Path | None = None):
         super().__init__(parent)
-        self._config_path = config_path
-        self._language = "fr"
-        self._config_error = ""
-        if config_path is not None:
-            try:
-                self._language = load_language(config_path)
-            except (OSError, ValueError, TypeError, AttributeError):
-                self._config_error = (
-                    "Impossible de lire config.toml. Le français est utilisé."
-                )
+        self._language = system_language()
         self._glm_key = ""
         self._glm_error = ""
         self._glm_path = (
@@ -347,30 +342,17 @@ class DemoState(QObject):
     def language(self):
         return self._language
 
-    @Property(str, notify=changed)
-    def configError(self):
-        return self.translate(self._config_error)
-
     @Slot(str, result=str)
     def translate(self, text):
         return translate(text, self._language)
 
     @Slot(str, result=bool)
     def setLanguage(self, language):
+        """Update session translations without persisting an OS language override."""
         if language not in ("fr", "en"):
             return False
-        try:
-            if self._config_path is not None:
-                save_language(self._config_path, language)
-        except OSError:
-            self._config_error = "Impossible d’enregistrer la langue dans config.toml."
-            self.changed.emit()
-            self._notify(self._config_error)
-            return False
         self._language = language
-        self._config_error = ""
         self.changed.emit()
-        self._notify("Langue enregistrée")
         return True
 
     @Property(str, notify=changed)
