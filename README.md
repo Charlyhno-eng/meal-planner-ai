@@ -1,7 +1,5 @@
 # Meal Planner AI
 
----
-
 Meal Planner AI helps households plan meals and prepare grocery lists.
 Add pantry items to track food already available at home.
 Use Add food in My pantry on the assistant screen or in the Pantry page.
@@ -73,13 +71,9 @@ messages, fixed clarifications, ingredient names, units, and categories.
 User-entered text and AI-generated recipes remain user/session data; AI output
 follows the detected language through the agents’ shared language instructions.
 
----
-
 ## See Meal Planner AI in action
 
 ![Meal Planner AI planning screen](docs/preview.png)
-
----
 
 ## Quickstart
 
