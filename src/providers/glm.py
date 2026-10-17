@@ -5,6 +5,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from src.errors import MealPlannerError
+from src.localization import source_text
 
 GLM_URL = "https://api.z.ai/api/paas/v4/chat/completions"
 GLM_MODEL = "glm-5.3-flash"
@@ -17,7 +18,7 @@ class CoordinatorUnavailable(MealPlannerError):
 def complete_json(system: str, data: dict, api_key: str) -> str:
     if not api_key:
         raise CoordinatorUnavailable(
-            "Enregistrez votre clé API GLM dans les paramètres."
+            source_text("text.save_your_glm_api_key_in_settings")
         )
     payload = {
         "model": GLM_MODEL,
@@ -43,13 +44,13 @@ def complete_json(system: str, data: dict, api_key: str) -> str:
             result = json.load(response)
     except HTTPError as exc:
         if exc.code in (401, 403):
-            message = "Clé API GLM refusée. Vérifiez les paramètres."
+            message = source_text("text.glm_api_key_rejected_check_settings")
         else:
-            message = "GLM indisponible. Réessayez plus tard."
+            message = source_text("text.glm_unavailable_try_again_later")
         raise CoordinatorUnavailable(message) from None
     except (URLError, TimeoutError, OSError):
         raise CoordinatorUnavailable(
-            "GLM indisponible. Vérifiez votre connexion."
+            source_text("text.glm_unavailable_check_your_connection")
         ) from None
     try:
         choice = result["choices"][0]

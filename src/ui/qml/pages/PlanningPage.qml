@@ -34,25 +34,25 @@ ScrollView {
                     Layout.fillWidth: true
                     spacing: 8
                     Caption {
-                        text: I18n.tr("Votre prochaine cuisine")
+                        text: I18n.tr("text.your_next_meals")
                         color: Theme.accent
                         font.pixelSize: 11
                         font.weight: Font.Medium
                     }
                     Heading {
-                        text: I18n.tr("Des repas à votre goût.")
+                        text: I18n.tr("text.meals_made_for_you")
                         Layout.fillWidth: true
                         font.pixelSize: 26
                     }
                     Caption {
-                        text: page.store.meals.length + I18n.tr(" repas · ")
-                              + page.store.settings.people + I18n.tr(" personnes")
+                        text: page.store.meals.length + I18n.tr("text.meals")
+                              + page.store.settings.people + I18n.tr("suffix.people")
 
                         color: "#c5d3c6"
                     }
                 }
                 ActionButton {
-                    text: I18n.tr("Paramètres des repas")
+                    text: I18n.tr("text.meal_settings")
                     primary: true
                     onClicked: page.configureRequested()
                 }
@@ -64,15 +64,15 @@ ScrollView {
                 Layout.fillWidth: true
                 spacing: 5
                 Heading {
-                    text: I18n.tr("Au menu")
+                    text: I18n.tr("text.on_the_menu")
                     Layout.fillWidth: true
                 }
                 Caption {
-                    text: I18n.tr("Période configurée : ") + page.store.period
+                    text: I18n.tr("text.configured_period") + page.store.period
                 }
             }
             ActionButton {
-                text: I18n.tr("Voir les courses")
+                text: I18n.tr("text.view_groceries_2")
                 quiet: true
                 onClicked: page.groceriesRequested()
             }
@@ -82,11 +82,11 @@ ScrollView {
             visible: page.store.requestedMeals.length > 0
             spacing: 12
             Heading {
-                text: I18n.tr("Repas souhaités")
+                text: I18n.tr("text.meal_requests")
                 font.pixelSize: 20
             }
             Caption {
-                text: I18n.tr("Anciennes demandes sans recette. Envoyez-les à nouveau dans l’assistant pour les planifier.")
+                text: I18n.tr("text.older_requests_without_a_recipe_send_them_again_in")
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
             }
@@ -109,12 +109,12 @@ ScrollView {
                                 Layout.fillWidth: true
                             }
                             Caption {
-                                text: modelData.servings + I18n.tr(" pers.") + " · " + modelData.periodLabel
+                                text: modelData.servings + I18n.tr("suffix.servings") + " · " + modelData.periodLabel
                                 Layout.fillWidth: true
                             }
                         }
                         ActionButton {
-                            text: I18n.tr("Retirer")
+                            text: I18n.tr("text.remove")
                             quiet: true
                             objectName: "removeItemButton"
                             onClicked: removalDialog.request(modelData.id, modelData.title)
@@ -172,9 +172,9 @@ ScrollView {
                             elide: Text.ElideRight
                         }
                         Caption {
-                            text: mealCard.modelData.minutes + " min · "
-                                  + mealCard.modelData.servings + I18n.tr(" pers.") + (
-                                      mealCard.modelData.guests ? I18n.tr(" · invités") : "")
+                            text: mealCard.modelData.minutes + I18n.tr("unit.minutes") + " · "
+                                  + mealCard.modelData.servings + I18n.tr("suffix.servings") + (
+                                      mealCard.modelData.guests ? I18n.tr("text.guests") : "")
                             font.pixelSize: 12
                         }
                         Caption {
@@ -187,13 +187,13 @@ ScrollView {
                         RowLayout {
                             Layout.fillWidth: true
                             ActionButton {
-                                text: I18n.tr("Voir la recette")
+                                text: I18n.tr("text.view_recipe_3")
                                 quiet: true
                                 implicitHeight: 30
                                 padding: 0
                                 Layout.fillWidth: true
                                 onClicked: page.recipeRequested(mealCard.modelData.id)
-                                Accessible.name: I18n.tr("Voir la recette : ")
+                                Accessible.name: I18n.tr("text.view_recipe_2")
                                                  + mealCard.modelData.title
                             }
                             ActionButton {
@@ -203,15 +203,15 @@ ScrollView {
                                 implicitHeight: 32
                                 implicitWidth: 32
                                 font.pixelSize: 22
-                                Accessible.name: I18n.tr("Remplacer ") + mealCard.modelData.title
+                                Accessible.name: I18n.tr("text.replace") + mealCard.modelData.title
                                 ToolTip.visible: hovered
-                                ToolTip.text: I18n.tr("Changer de repas")
+                                ToolTip.text: I18n.tr("text.change_meal")
                                 onClicked: page.store.replaceMeal(mealCard.modelData.id)
                             }
                         }
                         ActionButton {
                             visible: !!mealCard.modelData.requestId
-                            text: I18n.tr("Retirer")
+                            text: I18n.tr("text.remove")
                             quiet: true
                             objectName: "removeItemButton"
                             onClicked: removalDialog.request(mealCard.modelData.requestId, mealCard.modelData.title)
@@ -224,9 +224,9 @@ ScrollView {
             visible: page.store.meals.length === 0
             Layout.fillWidth: true
             Layout.topMargin: 24
-            title: I18n.tr("Aucun repas planifié pour le moment.")
-            description: I18n.tr("Demandez un plat à l’assistant pour créer votre première recette.")
-            actionText: I18n.tr("Planifier un repas")
+            title: I18n.tr("text.no_meals_planned_yet")
+            description: I18n.tr("text.ask_the_assistant_for_a_dish_to_create_your")
+            actionText: I18n.tr("text.plan_a_meal")
             onActivated: page.assistantRequested()
         }
     }

@@ -42,7 +42,7 @@ Dialog {
             anchors.right: parent.right
             anchors.rightMargin: 12
             y: 12
-            Accessible.name: I18n.tr("Fermer")
+            Accessible.name: I18n.tr("text.close")
             onClicked: control.close()
         }
         Caption {

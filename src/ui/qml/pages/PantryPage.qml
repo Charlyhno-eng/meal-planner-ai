@@ -7,9 +7,9 @@ ColumnLayout {
     id: page
     required property var store
     signal foodRequested(var food)
-    property string category: "Tout"
-    readonly property bool filtering: search.text.trim().length > 0 || category !== "Tout"
-    property var filtered: store.pantry.filter(item => (category === "Tout" || item.category === category)
+    property string category: "text.all"
+    readonly property bool filtering: search.text.trim().length > 0 || category !== "text.all"
+    property var filtered: store.pantry.filter(item => (category === "text.all" || item.category === category)
                            && item.name.toLocaleLowerCase().includes(search.text.trim().toLocaleLowerCase(
                                                                          )))
     spacing: 20
@@ -19,21 +19,21 @@ ColumnLayout {
             Layout.fillWidth: true
             spacing: 6
             Heading {
-                text: I18n.tr("Ce que vous avez déjà")
+                text: I18n.tr("text.what_you_already_have")
                 Layout.fillWidth: true
             }
             Caption {
-                text: page.store.pantry.length + I18n.tr(" aliments dans votre réserve")
+                text: page.store.pantry.length + I18n.tr("text.foods_in_your_pantry")
             }
         }
         ActionButton {
-            text: I18n.tr("+  Ajouter un aliment")
+            text: I18n.tr("text.add_food")
             primary: true
             onClicked: page.foodRequested(null)
         }
     }
     Caption {
-        text: I18n.tr("Reste théorique après tous les repas proposés, portions et invités inclus. Les achats ne sont pas inclus ; votre réserve actuelle reste inchangée.")
+        text: I18n.tr("text.theoretical_stock_after_all_proposed_meals_including_servings_and")
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
     }
@@ -41,14 +41,14 @@ ColumnLayout {
         id: search
         objectName: "pantrySearch"
         Layout.fillWidth: true
-        placeholderText: I18n.tr("Rechercher un aliment…")
-        Accessible.name: I18n.tr("Rechercher dans la réserve")
+        placeholderText: I18n.tr("text.search_for_food")
+        Accessible.name: I18n.tr("text.search_the_pantry")
     }
     Flow {
         Layout.fillWidth: true
         spacing: 8
         Repeater {
-            model: ["Tout", "Fruits & légumes", "Épicerie", "Produits frais"]
+            model: ["text.all", "Fruits & légumes", "Épicerie", "Produits frais"]
             Chip {
                 required property string modelData
                 text: I18n.tr(modelData)
@@ -112,20 +112,20 @@ ColumnLayout {
                         ColumnLayout {
                             spacing: 5
                             Caption {
-                                text: I18n.tr("Actuellement : ") + foodRow.modelData.quantity
+                                text: I18n.tr("text.currently") + foodRow.modelData.quantity
                                 color: Theme.text
                             }
                             Caption {
                                 objectName: "pantryRemaining-" + foodRow.modelData.id
-                                text: I18n.tr("Après les repas : ") + foodRow.modelData.remainingQuantity
+                                text: I18n.tr("text.after_meals") + foodRow.modelData.remainingQuantity
                                 color: Theme.accent
                             }
                         }
                         ActionButton {
-                            text: I18n.tr("Modifier")
+                            text: I18n.tr("text.edit")
                             quiet: true
                             onClicked: page.foodRequested(foodRow.modelData)
-                            Accessible.name: I18n.tr("Modifier ") + foodRow.modelData.name
+                            Accessible.name: I18n.tr("text.edit_2") + foodRow.modelData.name
                         }
                     }
                 }
@@ -135,11 +135,11 @@ ColumnLayout {
                 visible: page.filtered.length === 0
                 Layout.fillWidth: true
                 Layout.topMargin: 48
-                title: page.filtering ? I18n.tr("Aucun aliment trouvé") : I18n.tr("Votre réserve est vide")
-                description: page.filtering ? I18n.tr("Essayez un autre nom ou une autre catégorie.") : I18n.tr("Ajoutez quelques aliments pour commencer.")
-                actionText: page.filtering ? I18n.tr("Effacer les filtres") : I18n.tr("Ajouter un aliment")
+                title: page.filtering ? I18n.tr("text.no_food_found") : I18n.tr("text.your_pantry_is_empty")
+                description: page.filtering ? I18n.tr("text.try_another_name_or_category") : I18n.tr("text.add_some_food_to_get_started")
+                actionText: page.filtering ? I18n.tr("text.clear_filters") : I18n.tr("text.add_food_2")
                 onActivated: {
-                    if (page.filtering) { search.clear(); page.category = "Tout"; search.forceActiveFocus(); }
+                    if (page.filtering) { search.clear(); page.category = "text.all"; search.forceActiveFocus(); }
                     else page.foodRequested(null);
                 }
             }

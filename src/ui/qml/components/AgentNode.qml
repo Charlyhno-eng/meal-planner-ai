@@ -16,8 +16,8 @@ Button {
     padding: 12
     hoverEnabled: true
     Accessible.name: title
-    Accessible.description: kind === "pantry" ? I18n.tr("Service local")
-                                           : I18n.tr("Afficher le rôle et les échanges prévus de cet agent")
+    Accessible.description: kind === "pantry" ? I18n.tr("text.local_service")
+                                           : I18n.tr("text.show_this_agent_s_role_and_planned_exchanges")
     Accessible.role: Accessible.Button
     Accessible.onPressAction: clicked()
     background: Rectangle {
@@ -48,7 +48,7 @@ Button {
             Item { Layout.fillWidth: true }
             Text {
                 visible: node.kind !== "pantry"
-                text: node.planned ? I18n.tr("À venir") : "0" + node.step
+                text: node.planned ? I18n.tr("text.planned") : "0" + node.step
                 font.pixelSize: node.planned ? 10 : 12
                 font.weight: Font.DemiBold
                 color: node.selected ? node.tint : Theme.muted

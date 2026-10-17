@@ -6,7 +6,7 @@ Modal {
     id: dialog
     required property var store
     noticeSource: store
-    title: I18n.tr("Paramètres des repas")
+    title: I18n.tr("text.meal_settings")
     height: Math.min(650, parent.height - 48)
     onOpened: {
         start.iso = store.settings.start;
@@ -24,10 +24,10 @@ Modal {
             width: editor.availableWidth
             spacing: 16
             Caption {
-                text: I18n.tr("Choisissez le rythme qui vous convient.")
+                text: I18n.tr("text.choose_the_pace_that_suits_you")
             }
             Caption {
-                text: I18n.tr("À partir du")
+                text: I18n.tr("text.starting_on")
             }
             DatePicker {
                 id: start
@@ -39,7 +39,7 @@ Modal {
                 ColumnLayout {
                     Layout.fillWidth: true
                     Caption {
-                        text: I18n.tr("Jours")
+                        text: I18n.tr("text.days")
                     }
                     NumberPicker {
                         id: days
@@ -50,7 +50,7 @@ Modal {
                 ColumnLayout {
                     Layout.fillWidth: true
                     Caption {
-                        text: I18n.tr("Repas")
+                        text: I18n.tr("text.meals_2")
                     }
                     NumberPicker {
                         id: meals
@@ -61,7 +61,7 @@ Modal {
                 ColumnLayout {
                     Layout.fillWidth: true
                     Caption {
-                        text: I18n.tr("Personnes")
+                        text: I18n.tr("text.people")
                     }
                     NumberPicker {
                         id: people
@@ -70,28 +70,28 @@ Modal {
                 }
             }
             Caption {
-                text: I18n.tr("Choisissez vos repas pour la période, sans jour imposé.")
+                text: I18n.tr("text.choose_meals_for_the_period_without_assigned_days")
                 font.pixelSize: 12
             }
             Caption {
-                text: I18n.tr("Alimentation")
+                text: I18n.tr("text.diet_2")
             }
             Choice {
                 id: diet
                 Layout.fillWidth: true
-                model: [I18n.tr("Variée"), I18n.tr("Végétarienne")]
+                model: [I18n.tr("text.varied"), I18n.tr("text.vegetarian")]
             }
             Caption {
-                text: I18n.tr("Aliments que le foyer ne veut pas manger")
+                text: I18n.tr("text.foods_the_household_does_not_want_to_eat")
             }
             Field {
                 id: foodsToAvoid
                 Layout.fillWidth: true
-                placeholderText: I18n.tr("Ex. champignons, saumon")
-                Accessible.name: I18n.tr("Aliments que le foyer ne veut pas manger")
+                placeholderText: I18n.tr("text.e_g_mushrooms_salmon")
+                Accessible.name: I18n.tr("text.foods_the_household_does_not_want_to_eat")
             }
             Caption {
-                text: I18n.tr("Ces réglages serviront aux prochaines demandes. Pour créer des recettes, utilisez l’assistant. Les articles cochés seront réinitialisés.")
+                text: I18n.tr("text.these_settings_apply_to_future_requests_use_the_assistant")
                 Layout.fillWidth: true
                 font.pixelSize: 12
             }
@@ -106,12 +106,12 @@ Modal {
                 Layout.fillWidth: true
             }
             ActionButton {
-                text: I18n.tr("Annuler")
+                text: I18n.tr("text.cancel")
                 quiet: true
                 onClicked: dialog.close()
             }
             ActionButton {
-                text: I18n.tr("Enregistrer")
+                text: I18n.tr("text.save")
                 primary: true
                 onClicked: if (dialog.store.configure(start.iso, days.value, meals.value,
                                                       people.value, diet.currentIndex === 1,

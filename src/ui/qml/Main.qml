@@ -17,7 +17,7 @@ ApplicationWindow {
     }
     onCurrentPageChanged: if (currentPage !== 5)
         demo.assistant.cancelDictation()
-    property var pageTitles: [I18n.tr("Mes repas"), I18n.tr("Ma réserve"), I18n.tr("Mes courses"), I18n.tr("Mon foyer"), I18n.tr("Paramètres"), I18n.tr("Planifier avec l’IA"), I18n.tr("Interactions IA")]
+    property var pageTitles: [I18n.tr("text.my_meals"), I18n.tr("text.my_pantry"), I18n.tr("text.my_groceries"), I18n.tr("text.my_household"), I18n.tr("text.settings"), I18n.tr("text.plan_with_ai"), I18n.tr("text.ai_interactions")]
     Binding {
         target: I18n
         property: "translator"
@@ -28,7 +28,7 @@ ApplicationWindow {
     minimumWidth: 960
     minimumHeight: 700
     visible: true
-    title: "Meal Planner AI"
+    title: I18n.tr("app.name")
     color: Theme.background
     font.family: "DejaVu Sans"
     font.pixelSize: 14
@@ -76,7 +76,7 @@ ApplicationWindow {
                     height: 32
                     padding: 6
                     hoverEnabled: true
-                    text: window.sidebarCollapsed ? I18n.tr("Déplier le menu") : I18n.tr("Replier le menu")
+                    text: window.sidebarCollapsed ? I18n.tr("text.expand_sidebar") : I18n.tr("text.collapse_sidebar")
                     Accessible.name: text
                     ToolTip.visible: hovered
                     ToolTip.text: text
@@ -115,7 +115,7 @@ ApplicationWindow {
                     spacing: 3
                     Text {
                         Layout.fillWidth: true
-                        text: "Meal Planner AI"
+                        text: I18n.tr("app.name")
                         elide: Text.ElideRight
                         font.pixelSize: 14
                         font.weight: Font.DemiBold
@@ -123,7 +123,7 @@ ApplicationWindow {
                     }
                     Caption {
                         Layout.fillWidth: true
-                        text: I18n.tr("Votre cuisine, connectée")
+                        text: I18n.tr("text.your_connected_kitchen")
                         elide: Text.ElideRight
                         font.pixelSize: 10
                         color: Theme.secondary
@@ -138,18 +138,18 @@ ApplicationWindow {
                     anchors.leftMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
                     visible: !window.sidebarCollapsed && sidebar.width >= 200
-                    text: I18n.tr("Votre quotidien")
+                    text: I18n.tr("text.your_everyday_kitchen")
                     font.pixelSize: 10
                 }
             }
             Repeater {
                 model: [
-                    { title: I18n.tr("Assistant IA"), icon: "assistant", page: 5, count: 0 },
-                    { title: I18n.tr("Repas"), icon: "planning", page: 0, count: window.demo.meals.length },
-                    { title: I18n.tr("Réserve"), icon: "pantry", page: 1, count: window.demo.pantry.length },
-                    { title: I18n.tr("Courses"), icon: "groceries", page: 2,
+                    { title: I18n.tr("text.ai_assistant"), icon: "assistant", page: 5, count: 0 },
+                    { title: I18n.tr("text.meals_2"), icon: "planning", page: 0, count: window.demo.meals.length },
+                    { title: I18n.tr("text.pantry"), icon: "pantry", page: 1, count: window.demo.pantry.length },
+                    { title: I18n.tr("text.groceries"), icon: "groceries", page: 2,
                       count: window.demo.groceries.filter(item => !item.available && !item.checked).length },
-                    { title: I18n.tr("Foyer"), icon: "household", page: 3, count: 0 }
+                    { title: I18n.tr("text.household"), icon: "household", page: 3, count: 0 }
                 ]
                 delegate: NavButton {
                     required property var modelData
@@ -176,7 +176,7 @@ ApplicationWindow {
             NavButton {
                 objectName: "nav6"
                 Layout.fillWidth: true
-                text: I18n.tr("Interactions IA")
+                text: I18n.tr("text.ai_interactions")
                 iconName: "agents"
                 collapsed: window.sidebarCollapsed
                 selected: window.currentPage === 6
@@ -186,7 +186,7 @@ ApplicationWindow {
                 objectName: "nav4"
                 Layout.fillWidth: true
                 Layout.bottomMargin: 8
-                text: I18n.tr("Paramètres")
+                text: I18n.tr("text.settings")
                 iconName: "settings"
                 collapsed: window.sidebarCollapsed
                 selected: window.currentPage === 4
@@ -209,7 +209,7 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 spacing: 5
                 Caption {
-                    text: I18n.tr("Repas et courses à la maison")
+                    text: I18n.tr("text.meals_and_groceries_at_home")
                     color: Theme.secondary
                     font.pixelSize: 10
                 }

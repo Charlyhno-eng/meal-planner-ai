@@ -21,10 +21,10 @@ ScrollView {
         ColumnLayout {
             spacing: 6
             Heading {
-                text: I18n.tr("Chacun a sa place à table")
+                text: I18n.tr("text.a_place_at_the_table_for_everyone")
             }
             Caption {
-                text: I18n.tr("Votre foyer, vos goûts, vos invités.")
+                text: I18n.tr("text.your_household_your_tastes_your_guests")
             }
         }
         Panel {
@@ -53,16 +53,16 @@ ScrollView {
                     ColumnLayout {
                         Layout.fillWidth: true
                         Heading {
-                            text: I18n.tr("Votre foyer")
+                            text: I18n.tr("text.your_household")
                             font.pixelSize: 18
                             Layout.fillWidth: true
                         }
                         Caption {
-                            text: page.store.settings.people + I18n.tr(" personnes au quotidien")
+                            text: page.store.settings.people + I18n.tr("text.people_every_day")
                         }
                     }
                     ActionButton {
-                        text: I18n.tr("Modifier")
+                        text: I18n.tr("text.edit")
                         onClicked: page.preferencesRequested()
                     }
                 }
@@ -82,7 +82,7 @@ ScrollView {
                         spacing: 6
                         Text {
                             Layout.fillWidth: true
-                            text: profile.modelData.name || (I18n.tr("Personne ") + (profile.index + 1))
+                            text: profile.modelData.name || (I18n.tr("prefix.person") + (profile.index + 1))
                             color: Theme.text
                             font.pixelSize: 16
                             font.weight: Font.DemiBold
@@ -107,13 +107,13 @@ ScrollView {
                         spacing: 10
                         Caption {
                             Layout.fillWidth: true
-                            text: I18n.tr("Alimentation")
+                            text: I18n.tr("text.diet_2")
                             font.pixelSize: 11
                             font.weight: Font.Medium
                         }
                         Text {
-                            text: page.store.settings.vegetarian ? I18n.tr("Végétarienne") : I18n.tr(
-                                                                       "Variée")
+                            text: page.store.settings.vegetarian ? I18n.tr("text.vegetarian") : I18n.tr(
+                                                                       "text.varied")
                             color: Theme.text
                             font.pixelSize: 15
                         }
@@ -122,7 +122,7 @@ ScrollView {
                         Layout.fillWidth: true
                         spacing: 10
                         Caption {
-                            text: I18n.tr("Aliments que le foyer ne veut pas manger")
+                            text: I18n.tr("text.foods_the_household_does_not_want_to_eat")
                             font.pixelSize: 11
                             font.weight: Font.Medium
                         }
@@ -148,12 +148,12 @@ ScrollView {
         RowLayout {
             Layout.fillWidth: true
             Heading {
-                text: I18n.tr("Les invités")
+                text: I18n.tr("text.guests_2")
                 Layout.fillWidth: true
                 font.pixelSize: 20
             }
             ActionButton {
-                text: I18n.tr("+  Inviter à un repas")
+                text: I18n.tr("text.invite_to_a_meal")
                 objectName: "addGuestGroupButton"
                 onClicked: page.guestRequested()
             }
@@ -166,16 +166,16 @@ ScrollView {
                 anchors.centerIn: parent
                 spacing: 12
                 Heading {
-                    text: I18n.tr("Une place en plus ?")
+                    text: I18n.tr("text.room_for_one_more")
                     font.pixelSize: 18
                     Layout.alignment: Qt.AlignHCenter
                 }
                 Caption {
-                    text: I18n.tr("Les portions s’adaptent à vos invités. Vérifiez ensuite les ingrédients à acheter.")
+                    text: I18n.tr("text.servings_adjust_to_your_guests_then_check_which_ingredients")
                     Layout.alignment: Qt.AlignHCenter
                 }
                 ActionButton {
-                    text: I18n.tr("Ajouter des invités")
+                    text: I18n.tr("text.add_guests")
                     quiet: true
                     Layout.alignment: Qt.AlignHCenter
                     onClicked: page.guestRequested()
@@ -199,23 +199,23 @@ ScrollView {
                         Heading {
                             Layout.fillWidth: true
                             font.pixelSize: 18
-                            text: groupRow.modelData.name || I18n.tr("Les invités")
+                            text: groupRow.modelData.name || I18n.tr("text.guests_2")
                         }
                         ActionButton {
-                            text: I18n.tr("Retirer")
+                            text: I18n.tr("text.remove")
                             quiet: true
                             destructive: true
                             objectName: "removeGuestGroupButton"
-                            onClicked: removalDialog.request("group:" + groupRow.index, groupRow.modelData.name || I18n.tr("Les invités"))
+                            onClicked: removalDialog.request("group:" + groupRow.index, groupRow.modelData.name || I18n.tr("text.guests_2"))
                         }
                     }
                     Caption {
                         Layout.fillWidth: true
-                        text: groupRow.modelData.members.length + I18n.tr(" invité(s) · ") + groupRow.modelData.meals.map(i => I18n.tr("Repas ") + (i + 1)).join(", ")
+                        text: groupRow.modelData.members.length + I18n.tr("suffix.guests") + groupRow.modelData.meals.map(i => I18n.tr("prefix.meal") + (i + 1)).join(", ")
                     }
                     Caption {
                         Layout.fillWidth: true
-                        text: I18n.tr("Préférences appliquées uniquement aux repas sélectionnés.")
+                        text: I18n.tr("text.preferences_apply_only_to_the_selected_meals")
                     }
                     Repeater {
                         model: groupRow.modelData.members
@@ -223,7 +223,7 @@ ScrollView {
                             required property var modelData
                             required property int index
                             Layout.fillWidth: true
-                            text: (modelData.name || I18n.tr("Personne ") + (index + 1)) + (modelData.foods_to_avoid ? " · " + modelData.foods_to_avoid : "")
+                            text: (modelData.name || I18n.tr("prefix.person") + (index + 1)) + (modelData.foods_to_avoid ? " · " + modelData.foods_to_avoid : "")
                         }
                     }
                 }
@@ -251,12 +251,12 @@ ScrollView {
                             font.weight: Font.DemiBold
                         }
                         Caption {
-                            text: guestRow.modelData.guests + I18n.tr(" invité(s) · ")
-                                  + guestRow.modelData.servings + I18n.tr(" portions au total")
+                            text: guestRow.modelData.guests + I18n.tr("suffix.guests")
+                                  + guestRow.modelData.servings + I18n.tr("text.servings_in_total")
                         }
                     }
                     ActionButton {
-                        text: I18n.tr("Retirer")
+                        text: I18n.tr("text.remove")
                         quiet: true
                         destructive: true
                         objectName: "removeItemButton"

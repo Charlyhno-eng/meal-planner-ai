@@ -7,6 +7,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.request import urlopen
 
+from src.localization import source_text
+
 MODEL_NAME = "nemo-parakeet-tdt-0.6b-v3"
 MODEL_FILES = (
     "config.json",
@@ -56,15 +58,15 @@ class LocalParakeet:
     def check_available(self):
         if not self.is_installed():
             raise MissingParakeetError(
-                "Parakeet TDT 0.6B v3 absent ou incomplet. "
-                "Téléchargez le modèle dans les paramètres."
+                source_text("text.parakeet_tdt_0_6b_v3_is_missing_or_incomplete")
             )
         if any(
             find_spec(module) is None for module in ("onnx_asr", "onnxruntime", "numpy")
         ):
             raise RuntimeError(
-                "Les dépendances de dictée sont absentes. Fermez l’application "
-                "et lancez uv sync --locked dans le dossier du projet."
+                source_text(
+                    "text.dictation_dependencies_are_missing_close_the_app_and_run"
+                )
             )
 
     def transcribe(self, pcm: bytes, sample_rate: int) -> str:
@@ -80,5 +82,7 @@ class LocalParakeet:
         samples = np.frombuffer(pcm, dtype="<i2").astype(np.float32) / 32768
         text = self._model.recognize(samples, sample_rate=sample_rate)
         if not isinstance(text, str) or not text.strip():
-            raise RuntimeError("Aucune parole reconnue. Réessayez près du microphone.")
+            raise RuntimeError(
+                source_text("text.no_speech_recognized_try_again_near_the_microphone")
+            )
         return text.strip()

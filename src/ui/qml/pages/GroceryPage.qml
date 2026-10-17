@@ -24,21 +24,21 @@ ColumnLayout {
             Layout.fillWidth: true
             spacing: 6
             Heading {
-                text: I18n.tr("Tout pour vos prochains repas")
+                text: I18n.tr("text.everything_for_your_next_meals")
                 Layout.fillWidth: true
             }
             Caption {
-                text: I18n.tr("Les achats ajoutés indiquent leur propre période.")
+                text: I18n.tr("text.added_purchases_show_their_own_planning_period")
             }
         }
         ActionButton {
             objectName: "finishGroceriesButton"
-            text: I18n.tr("Terminer les courses")
+            text: I18n.tr("text.finish_shopping")
             enabled: page.completed > 0
             onClicked: page.store.finishGroceries()
         }
         ActionButton {
-            text: I18n.tr("Copier la liste")
+            text: I18n.tr("text.copy_list")
             enabled: page.shopping.length > 0
             onClicked: page.store.copyGroceries()
         }
@@ -66,12 +66,12 @@ ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 10
                 Text {
-                    text: page.store.groceries.length === 0 ? I18n.tr("La liste est vide") : page.shopping.length === 0 ? I18n.tr("Vous avez déjà tout !") :
+                    text: page.store.groceries.length === 0 ? I18n.tr("text.the_list_is_empty") : page.shopping.length === 0 ? I18n.tr("text.you_already_have_everything") :
                                                        page.completed === page.shopping.length
-                                                       ? I18n.tr("Tout est dans le panier !") :
-                                                         page.completed + I18n.tr(" sur ")
+                                                       ? I18n.tr("text.everything_is_in_your_basket") :
+                                                         page.completed + I18n.tr("text.of")
                                                          + page.shopping.length + I18n.tr(
-                                                             " articles cochés")
+                                                             "text.items_checked")
                     color: Theme.text
                     font.pixelSize: 15
                     font.weight: Font.Medium
@@ -100,12 +100,12 @@ ColumnLayout {
     RowLayout {
         spacing: 8
         Chip {
-            text: I18n.tr("À acheter  ·  ") + page.shopping.length
+            text: I18n.tr("text.to_buy") + page.shopping.length
             checked: !page.showAvailable
             onClicked: page.showAvailable = false
         }
         Chip {
-            text: I18n.tr("Déjà à la maison  ·  ") + (page.store.groceries.length
+            text: I18n.tr("text.already_at_home") + (page.store.groceries.length
                                                       - page.shopping.length)
 
             checked: page.showAvailable
@@ -208,8 +208,8 @@ ColumnLayout {
                                     }
                                     Caption {
                                         visible: !!groceryRow.modelData.requiredQuantity
-                                        text: I18n.tr("Besoin : ") + (groceryRow.modelData.requiredQuantity || "")
-                                              + I18n.tr(" · Réserve : ") + (groceryRow.modelData.stockQuantity || "")
+                                        text: I18n.tr("text.required") + (groceryRow.modelData.requiredQuantity || "")
+                                              + I18n.tr("text.pantry_2") + (groceryRow.modelData.stockQuantity || "")
                                         Layout.fillWidth: true
                                         font.pixelSize: 11
                                         elide: Text.ElideRight
@@ -220,7 +220,7 @@ ColumnLayout {
                                 }
                                 ActionButton {
                                     visible: !!groceryRow.modelData.requestId
-                                    text: I18n.tr("Retirer")
+                                    text: I18n.tr("text.remove")
                                     quiet: true
                                     objectName: "removeItemButton"
                                     onClicked: removalDialog.request(groceryRow.modelData.requestId, groceryRow.modelData.name)
@@ -235,14 +235,14 @@ ColumnLayout {
                 visible: page.displayed.length === 0
                 Layout.fillWidth: true
                 Layout.topMargin: 36
-                title: page.showAvailable ? I18n.tr("Rien en réserve pour ces repas") : I18n.tr("La liste est vide")
-                description: page.showAvailable ? I18n.tr("Ajoutez vos aliments dans la réserve.") : I18n.tr("Ajoutez des achats dans l’assistant ou les ingrédients manquants depuis une recette.")
-                actionText: page.showAvailable ? I18n.tr("Ouvrir la réserve") : I18n.tr("Ajouter des achats")
+                title: page.showAvailable ? I18n.tr("text.nothing_in_stock_for_these_meals") : I18n.tr("text.the_list_is_empty")
+                description: page.showAvailable ? I18n.tr("text.add_your_food_to_the_pantry") : I18n.tr("text.add_purchases_in_the_assistant_or_missing_ingredients_from")
+                actionText: page.showAvailable ? I18n.tr("text.open_pantry") : I18n.tr("text.add_purchases")
                 onActivated: page.showAvailable ? page.pantryRequested() : page.assistantRequested()
             }
             Caption {
                 visible: page.displayed.length > 0
-                text: page.showAvailable ? I18n.tr("Quantités nécessaires aux repas, couvertes par votre réserve.") : I18n.tr("Terminez les courses pour ajouter les articles cochés à votre réserve.")
+                text: page.showAvailable ? I18n.tr("text.quantities_needed_for_meals_covered_by_your_pantry") : I18n.tr("text.finish_shopping_to_add_checked_items_to_your_pantry")
                 Layout.topMargin: 12
                 Layout.bottomMargin: 12
             }

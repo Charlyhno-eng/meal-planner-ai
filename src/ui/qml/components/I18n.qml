@@ -6,7 +6,7 @@ QtObject {
     readonly property string language: translator ? translator.language : "en"
     function tr(text) {
         // Reading language makes all calling QML bindings reactive to a switch.
-        if (language === "en" && translator)
+        if (translator && language)
             return translator.translate(text);
         return text;
     }

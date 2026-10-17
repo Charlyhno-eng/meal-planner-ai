@@ -26,9 +26,9 @@ ScrollView {
                 anchors.fill: parent
                 anchors.margins: 24
                 spacing: 18
-                Heading { text: I18n.tr("Connexion à l’assistant") }
-                Caption { text: "GLM_ai / glm-5.3-flash" }
-                Caption { text: I18n.tr("Clé API GLM"); Layout.fillWidth: true }
+                Heading { text: I18n.tr("text.assistant_connection") }
+                Caption { text: I18n.tr("model.glm") }
+                Caption { text: I18n.tr("text.glm_api_key"); Layout.fillWidth: true }
                 RowLayout {
                     Layout.fillWidth: true
                     Field {
@@ -36,7 +36,7 @@ ScrollView {
                         objectName: "glmApiKey"
                         Layout.fillWidth: true
                         text: page.store.glmApiKey
-                        placeholderText: I18n.tr("Saisir la clé API")
+                        placeholderText: I18n.tr("text.enter_api_key")
                         echoMode: reveal.checked ? TextInput.Normal : TextInput.Password
                         inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText
                     }
@@ -45,13 +45,13 @@ ScrollView {
                         objectName: "glmRevealKey"
                         text: "👁"
                         checkable: true
-                        Accessible.name: I18n.tr(checked ? "Masquer la clé" : "Afficher la clé")
+                        Accessible.name: I18n.tr(checked ? "text.hide_key" : "text.show_key")
                         ToolTip.visible: hovered
                         ToolTip.text: Accessible.name
                     }
                     ActionButton {
                         objectName: "glmSaveKey"
-                        text: I18n.tr("Enregistrer")
+                        text: I18n.tr("text.save")
                         primary: true
                         onClicked: {
                             if (page.store.setGlmApiKey(apiKey.text)) {
@@ -78,16 +78,16 @@ ScrollView {
                 anchors.fill: parent
                 anchors.margins: 24
                 spacing: 18
-                Heading { text: I18n.tr("Dictée vocale") }
-                Caption { text: "Parakeet TDT 0.6B v3" }
+                Heading { text: I18n.tr("text.voice_dictation") }
+                Caption { text: I18n.tr("model.parakeet") }
                 Caption {
                     objectName: "parakeetStatus"
-                    text: I18n.tr(page.assistant.modelDownloading ? "Téléchargement du modèle en cours…" : page.assistant.modelInstalled ? "Modèle installé. Vous pouvez dicter votre demande." : "Modèle absent ou incomplet. Téléchargez-le pour utiliser la dictée.")
+                    text: I18n.tr(page.assistant.modelDownloading ? "text.downloading_model" : page.assistant.modelInstalled ? "text.model_installed_you_can_dictate_your_request" : "text.model_missing_or_incomplete_download_it_to_use_dictation")
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
                 }
                 Caption {
-                    text: I18n.tr("Téléchargement depuis Hugging Face : environ 2,6 Go. Une connexion Internet est nécessaire.")
+                    text: I18n.tr("text.download_from_hugging_face_about_2_6_gb_an")
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
                 }
@@ -99,7 +99,7 @@ ScrollView {
                 ActionButton {
                     id: downloadButton
                     objectName: "downloadParakeetButton"
-                    text: I18n.tr("Télécharger Parakeet")
+                    text: I18n.tr("text.download_parakeet")
                     primary: true
                     enabled: !page.assistant.modelInstalled && !page.assistant.busy && !page.assistant.recording
                     onClicked: page.assistant.downloadModel()

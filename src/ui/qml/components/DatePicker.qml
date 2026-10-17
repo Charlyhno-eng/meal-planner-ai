@@ -9,9 +9,8 @@ ActionButton {
     property date chosen: new Date(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(
                                        iso.slice(8, 10)))
     property var displayLocale: Qt.locale(I18n.language === "en" ? "en_GB" : "fr_FR")
-    text: displayLocale.toString(chosen, (I18n.language === "en" ? "dddd, d MMMM yyyy" :
-                                                                   "dddd d MMMM yyyy")) + "   ▦"
-    Accessible.name: I18n.tr("Choisir la date de début : ") + text
+    text: displayLocale.toString(chosen, I18n.tr("format.date_long")) + "   ▦"
+    Accessible.name: I18n.tr("text.choose_start_date") + text
     onClicked: calendar.open()
     Popup {
         id: calendar
@@ -35,7 +34,7 @@ ActionButton {
                 ActionButton {
                     text: "‹"
                     quiet: true
-                    Accessible.name: I18n.tr("Mois précédent")
+                    Accessible.name: I18n.tr("text.previous_month")
                     onClicked: calendar.monthDate = new Date(calendar.monthDate.getFullYear(),
                                                              calendar.monthDate.getMonth() - 1, 1)
                 }
@@ -49,7 +48,7 @@ ActionButton {
                 ActionButton {
                     text: "›"
                     quiet: true
-                    Accessible.name: I18n.tr("Mois suivant")
+                    Accessible.name: I18n.tr("text.next_month")
                     onClicked: calendar.monthDate = new Date(calendar.monthDate.getFullYear(),
                                                              calendar.monthDate.getMonth() + 1, 1)
                 }
@@ -76,10 +75,7 @@ ActionButton {
                     required property var model
                     objectName: "calendarDay-" + Qt.formatDate(model.date, "yyyy-MM-dd")
                     text: model.day
-                    Accessible.name: control.displayLocale.toString(model.date, (I18n.language
-                                                                                 === "en"
-                                                                                 ? "dddd, d MMMM yyyy" :
-                                                                                   "dddd d MMMM yyyy"))
+                    Accessible.name: control.displayLocale.toString(model.date, I18n.tr("format.date_long"))
                     hoverEnabled: true
                     background: Rectangle {
                         radius: 8
@@ -103,7 +99,7 @@ ActionButton {
                 }
             }
             ActionButton {
-                text: I18n.tr("Aujourd’hui")
+                text: I18n.tr("text.today")
                 quiet: true
                 Layout.fillWidth: true
                 onClicked: {

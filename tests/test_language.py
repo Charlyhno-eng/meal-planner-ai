@@ -11,9 +11,12 @@ from PySide6.QtTest import QTest
 from sample_data import RECIPES
 from test_bootstrap import visual_child
 
+from src.domain.foods import canonical_food
+from src.localization import CATALOGS, ENGLISH, system_language, translate
+from src.localization.catalogs import CANONICAL_KEYS
 from src.ui import app
 from src.ui.demo import DemoState
-from src.ui.i18n import ENGLISH, system_language
+from src.ui.i18n import translate_food
 
 
 @pytest.mark.parametrize(
@@ -26,12 +29,14 @@ from src.ui.i18n import ENGLISH, system_language
         (["de-DE", "fr-CH", "en-US"], "fr"),
         (["en-AU", "fr-FR"], "en"),
         (["de-DE"], "en"),
+        (["es-ES", "fr-FR", "en-GB"], "fr"),
+        (["es-ES"], "en"),
         ([], "en"),
     ],
 )
 def test_system_ui_language_preference_order(monkeypatch, tags, expected):
     monkeypatch.setattr(
-        "src.ui.i18n.QLocale",
+        "src.localization.system.QLocale",
         SimpleNamespace(system=lambda: SimpleNamespace(uiLanguages=lambda: tags)),
     )
     assert system_language() == expected
@@ -57,16 +62,57 @@ def test_startup_uses_system_language_without_reading_or_writing_preference(
         assert path.read_text() == content
 
 
-def test_qml_translation_literals_have_english_entries():
-    qml = Path(app.__file__).parent / "qml"
-    missing = set()
-    for path in qml.rglob("*.qml"):
-        # Include literals in conditional expressions inside translation calls.
-        for call in re.findall(r"I18n\.tr\(([^)]*)\)", path.read_text()):
-            for source in re.findall(r'"([^"\n]*)"', call):
-                if source not in ENGLISH:
-                    missing.add(source)
-    assert not missing, f"Missing English translations: {sorted(missing)}"
+def test_application_text_ids_exist_in_both_catalogs():
+    root = Path(app.__file__).parents[1]
+    references = set()
+    for path in [*root.rglob("*.qml"), *root.rglob("*.py")]:
+        text = path.read_text()
+        # Covers static calls as well as IDs in dynamic QML models/UI state.
+        references.update(
+            re.findall(
+                r'["\']((?:text|month|prefix|suffix|category|unit|food|workflow|app|model|format)\.[a-z0-9_]+)["\']',
+                text,
+            )
+        )
+        if path.suffix == ".qml":
+            # New static UI phrases must also use an ID, not a source sentence.
+            references.update(re.findall(r'I18n\.tr\(\s*"([^"]+)"', text))
+    references.update(CANONICAL_KEYS.values())
+    for language, catalog in CATALOGS.items():
+        assert not references - catalog.keys(), language
+
+
+def test_catalogs_have_matching_keys_and_template_fields():
+    from string import Formatter
+
+    french, english = CATALOGS["fr"], CATALOGS["en"]
+    assert french.keys() == english.keys()
+
+    def fields(text):
+        return {name for _, name, _, _ in Formatter().parse(text) if name is not None}
+
+    for key in french:
+        assert french[key] and english[key], key
+        assert fields(french[key]) == fields(english[key]), key
+
+
+def test_catalog_translation_preserves_domain_and_custom_values():
+    assert translate("text.settings", "fr") == "Paramètres"
+    assert translate("text.settings", "en") == "Settings"
+    assert translate("text.settings", "es") == "Settings"
+    assert translate("Riz", "en") == "Rice"
+    assert translate("Ma recette {maison}", "en") == "Ma recette {maison}"
+    assert "riz (100 g)" in translate(
+        "workflow.ask_package_size", "fr", foods="riz (100 g)"
+    )
+
+
+def test_food_display_wording_keeps_persisted_identities(monkeypatch):
+    monkeypatch.setitem(CATALOGS["fr"], "food.rice", "Riz (libellé modifié)")
+    assert canonical_food("Rice") == "Riz"
+    assert canonical_food("Riz (libellé modifié)") == "Riz"
+    assert translate_food("Riz", "fr") == "Riz (libellé modifié)"
+    assert translate_food("Mon mélange maison", "en") == "Mon mélange maison"
 
 
 def test_all_recipe_content_is_translated_and_state_survives_language_change(qt_app):
@@ -167,6 +213,8 @@ def test_system_language_translates_every_screen_and_dialog_without_qml_warnings
                 assert "Wednesday" in picker.property("text")
                 assert "October" in picker.property("text")
             QMetaObject.invokeMethod(dialog, "close")
+        quantity_mode = window.findChild(QObject, "foodQuantityMode")
+        assert quantity_mode.property("displayText") == "Total quantity"
         assert (
             window.findChild(QObject, "recipeDialog").property("title")
             == "Time to cook"
@@ -175,6 +223,7 @@ def test_system_language_translates_every_screen_and_dialog_without_qml_warnings
         demo.setLanguage("fr")
         qt_app.processEvents()
         assert demo.language == "fr"
+        assert quantity_mode.property("displayText") == "Quantité totale"
         assert (
             window.findChild(QObject, "recipeDialog").property("title") == "À cuisiner"
         )

@@ -8,6 +8,7 @@ from urllib.request import Request, urlopen
 
 from langgraph.graph import END, START, StateGraph
 
+from src.localization import source_text
 from src.models.planning import PlanningProposal, validate_recipes
 
 
@@ -53,8 +54,9 @@ def ask_local_model(state: PlanningState) -> dict:
             result = json.load(response)
     except (URLError, TimeoutError) as exc:
         raise RuntimeError(
-            "Ollama indisponible. Démarrez Ollama avec un modèle local déjà installé "
-            "(MEAL_PLANNER_OLLAMA_MODEL)."
+            source_text(
+                "text.ollama_is_unavailable_start_ollama_with_an_already_installed"
+            )
         ) from exc
     return {
         "proposal": PlanningProposal.model_validate_json(result["message"]["content"])

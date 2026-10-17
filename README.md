@@ -53,6 +53,7 @@ Household settings, recipes, and grocery purchases are stored locally.
 Use the chevron at the top of the sidebar to collapse or expand navigation.
 The compact menu keeps icons aligned and buttons in place; hover over an icon
 to see its label. Interactions and Settings remain at the bottom.
+**Only French (`fr`) and English (`en`) are currently available.**
 The desktop interface automatically follows the operating system’s preferred UI
 languages at startup, using the first supported language (English or French).
 If neither is supported, it uses English. No language setting is needed; any old
@@ -61,6 +62,16 @@ the system language.
 AI recipes and clarification messages follow the detected application language,
 even when the request is written in the other language.
 AI meal planning uses a GLM API key saved in Settings.
+
+All built-in translatable text is grouped in [`src/localization/`](src/localization/README.md):
+[`fr.json`](src/localization/fr.json) contains the French text and
+[`en.json`](src/localization/en.json) contains the English text, with matching
+stable identifiers. Screens and Python messages reference these identifiers;
+edit the catalogs to change wording without changing application logic.
+The catalogs include interface labels, assistant examples, errors, progress
+messages, fixed clarifications, ingredient names, units, and categories.
+User-entered text and AI-generated recipes remain user/session data; AI output
+follows the detected language through the agents’ shared language instructions.
 
 ---
 

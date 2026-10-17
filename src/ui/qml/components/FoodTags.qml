@@ -39,7 +39,7 @@ ColumnLayout {
                     verticalAlignment: Text.AlignVCenter
                 }
                 implicitHeight: Math.max(34, contentItem.implicitHeight + 16)
-                Accessible.name: control.editable ? I18n.tr("Retirer") + " " + modelData : modelData
+                Accessible.name: control.editable ? I18n.tr("text.remove") + " " + modelData : modelData
                 onClicked: {
                     if (control.editable)
                         control.items = control.items.filter((_, i) => i !== index);
@@ -54,14 +54,14 @@ ColumnLayout {
             id: input
             objectName: "excludedFoodInput"
             Layout.fillWidth: true
-            placeholderText: I18n.tr("Ex. lactose, champignons")
-            Accessible.name: I18n.tr("Aliment à éviter")
+            placeholderText: I18n.tr("text.e_g_lactose_mushrooms")
+            Accessible.name: I18n.tr("text.food_to_avoid")
             maximumLength: 1000
             onAccepted: control.addPending()
         }
         ActionButton {
             objectName: "addExcludedFood"
-            text: I18n.tr("Ajouter")
+            text: I18n.tr("text.add")
             enabled: input.text.trim().length > 0
             onClicked: control.addPending()
         }

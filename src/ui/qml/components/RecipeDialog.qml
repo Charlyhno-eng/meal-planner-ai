@@ -8,7 +8,7 @@ Modal {
     noticeSource: store
     property int mealId: -1
     property var meal: store.meals.find(item => item.id === mealId) || null
-    title: I18n.tr("À cuisiner")
+    title: I18n.tr("text.time_to_cook")
     width: Math.min(680, parent.width - 48)
     height: Math.min(740, parent.height - 48)
     function showRecipe(id) {
@@ -39,34 +39,34 @@ Modal {
             }
             RowLayout {
                 Caption {
-                    text: dialog.meal ? dialog.meal.minutes + " min  ·  " + dialog.meal.servings
-                                        + I18n.tr(" personnes") : ""
+                    text: dialog.meal ? dialog.meal.minutes + I18n.tr("unit.minutes") + "  ·  " + dialog.meal.servings
+                                        + I18n.tr("suffix.people") : ""
                     color: Theme.accent
                 }
                 Item {
                     Layout.fillWidth: true
                 }
                 Caption {
-                    text: dialog.meal && dialog.meal.vegetarian ? I18n.tr("Végétarien") : ""
+                    text: dialog.meal && dialog.meal.vegetarian ? I18n.tr("text.vegetarian_2") : ""
                 }
             }
             Caption {
                 objectName: "recipeGuests"
                 Layout.fillWidth: true
                 visible: !!dialog.meal && dialog.meal.guestNames.length > 0
-                text: I18n.tr("Invités à ce repas : ") + (dialog.meal ? dialog.meal.guestNames.join(", ") : "")
+                text: I18n.tr("text.guests_at_this_meal") + (dialog.meal ? dialog.meal.guestNames.join(", ") : "")
             }
             Caption {
                 objectName: "recipeExclusions"
                 Layout.fillWidth: true
                 visible: !!dialog.meal && dialog.meal.foodsToAvoid.length > 0
-                text: I18n.tr("Aliments à éviter pour ce repas : ") + (dialog.meal ? dialog.meal.foodsToAvoid.join(", ") : "")
+                text: I18n.tr("text.foods_to_avoid_for_this_meal") + (dialog.meal ? dialog.meal.foodsToAvoid.join(", ") : "")
             }
             RowLayout {
                 visible: !!dialog.meal && !!dialog.meal.requestId
                 Layout.fillWidth: true
                 Caption {
-                    text: I18n.tr("Portions (hors invités)")
+                    text: I18n.tr("text.servings_excluding_guests")
                     Layout.fillWidth: true
                 }
                 NumberPicker {
@@ -74,7 +74,7 @@ Modal {
                     from: 1
                     to: 32
                     value: dialog.meal ? (dialog.meal.baseServings || 1) : 1
-                    Accessible.name: I18n.tr("Portions (hors invités)")
+                    Accessible.name: I18n.tr("text.servings_excluding_guests")
                     onValueModified: {
                         if (!dialog.store.setMealServings(dialog.mealId, value))
                             value = dialog.meal.baseServings;
@@ -87,7 +87,7 @@ Modal {
                 color: Theme.border
             }
             Heading {
-                text: I18n.tr("Ingrédients")
+                text: I18n.tr("text.ingredients")
                 font.pixelSize: 17
             }
             Repeater {
@@ -109,8 +109,8 @@ Modal {
                     }
                     Repeater {
                         model: [
-                            { label: I18n.tr("Réserve"), covered: ingredientRow.modelData.inPantry },
-                            { label: I18n.tr("Courses"), covered: ingredientRow.modelData.inGroceries }
+                            { label: I18n.tr("text.pantry"), covered: ingredientRow.modelData.inPantry },
+                            { label: I18n.tr("text.groceries"), covered: ingredientRow.modelData.inGroceries }
                         ]
                         Label {
                             required property var modelData
@@ -126,15 +126,15 @@ Modal {
                         text: "+"
                         quiet: true
                         implicitHeight: 32
-                        Accessible.name: I18n.tr("Ajouter aux courses") + " : " + ingredientRow.modelData.name
+                        Accessible.name: I18n.tr("text.add_to_groceries") + " : " + ingredientRow.modelData.name
                         ToolTip.visible: hovered
-                        ToolTip.text: I18n.tr("Ajouter aux courses")
+                        ToolTip.text: I18n.tr("text.add_to_groceries")
                         onClicked: dialog.store.addIngredientToGroceries(dialog.mealId, ingredientRow.index)
                     }
                 }
             }
             Heading {
-                text: I18n.tr("Préparation")
+                text: I18n.tr("text.preparation")
                 font.pixelSize: 17
                 Layout.topMargin: 8
             }
@@ -177,14 +177,14 @@ Modal {
             anchors.margins: 16
             ActionButton {
                 visible: !!dialog.meal && !dialog.meal.requestId
-                text: I18n.tr("↻  Changer de repas")
+                text: I18n.tr("text.change_meal_2")
                 onClicked: dialog.store.replaceMeal(dialog.mealId)
             }
             Item {
                 Layout.fillWidth: true
             }
             ActionButton {
-                text: I18n.tr("C’est noté")
+                text: I18n.tr("text.got_it")
                 primary: true
                 onClicked: dialog.close()
             }

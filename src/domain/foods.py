@@ -1,33 +1,11 @@
 """Stable ingredient identities and French/English matching."""
 
+from src.localization.catalogs import CANONICAL_KEYS, CATALOGS
+
 FOOD_NAMES = {
-    "Avocat": "Avocado",
-    "Biscuits à la cuillère": "Ladyfingers",
-    "Bouillon de légumes": "Vegetable stock",
-    "Cacao": "Cocoa",
-    "Café": "Coffee",
-    "Champignons": "Mushrooms",
-    "Citron": "Lemon",
-    "Concombre": "Cucumber",
-    "Courgettes": "Courgettes",
-    "Curry": "Curry",
-    "Feta végétarienne": "Vegetarian feta",
-    "Lait de coco": "Coconut milk",
-    "Lentilles corail": "Red lentils",
-    "Mascarpone": "Mascarpone",
-    "Pain": "Bread",
-    "Parmesan végétarien": "Vegetarian parmesan",
-    "Pesto": "Pesto",
-    "Pois chiches": "Chickpeas",
-    "Pommes de terre": "Potatoes",
-    "Pâtes": "Pasta",
-    "Quinoa": "Quinoa",
-    "Riz": "Rice",
-    "Salade": "Lettuce",
-    "Saumon": "Salmon",
-    "Sucre": "Sugar",
-    "Tomates cerises": "Cherry tomatoes",
-    "Œufs": "Eggs",
+    canonical: CATALOGS["en"][key]
+    for canonical, key in CANONICAL_KEYS.items()
+    if key.startswith("food.")
 }
 
 
@@ -36,7 +14,12 @@ def canonical_food(text: str) -> str:
         (
             source
             for source, english in FOOD_NAMES.items()
-            if text.casefold() in (source.casefold(), english.casefold())
+            if text.casefold()
+            in (
+                source.casefold(),
+                english.casefold(),
+                CATALOGS["fr"][CANONICAL_KEYS[source]].casefold(),
+            )
         ),
         text,
     )

@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from src.agents.food_preferences import PreferenceConflict
 from src.domain.dietary import conflicting_terms
 from src.domain.foods import food_terms
+from src.localization import source_text
 from src.models.coordinator import GroceryAdd, RequestedMeal, ShoppingItem
 from src.models.household import exclusion_labels
 from src.models.recipes import Ingredient
@@ -29,9 +30,7 @@ def check_food_exclusions(
     def verify(texts, excluded):
         if any(conflicting_terms(text, excluded) for text in texts):
             raise FoodExclusionConflict(
-                "Les recettes ou la liste de courses contiennent "
-                "un aliment que le foyer souhaite éviter. "
-                "Précisez une variante et réessayez."
+                source_text("text.the_recipes_or_grocery_list_contain_a_food_the")
             )
 
     for index, meal in enumerate(meals, meal_offset):

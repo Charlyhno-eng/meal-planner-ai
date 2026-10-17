@@ -12,6 +12,7 @@ from src.agents.food_preferences.agent import preference_conflicts
 from src.agents.grocery_list import calculate_groceries
 from src.agents.meal_planning import plan_meals
 from src.domain.foods import canonical_food
+from src.localization import source_text, translate
 from src.models.coordinator import CoordinatorProposal, RequestedMeal
 from src.models.execution import MealExecution
 from src.models.groceries import GroceryRequirement
@@ -88,9 +89,9 @@ def build_meal_workflow(
     coordinator = build_coordinator_workflow(api_key, reason=coordinator_reason)
 
     def coordinate(state):
-        report("GLM : envoi de votre demande et du contexte, attente de son analyse…")
+        report(source_text("text.glm_sending_your_request_and_context_waiting_for_its"))
         result = coordinator.invoke(state, {"recursion_limit": 60})
-        report("GLM a répondu : votre demande a été structurée et validée.")
+        report(source_text("text.glm_has_replied_your_request_has_been_structured_and"))
         return {
             "commands": result["proposal"],
             "meals": [],
@@ -108,7 +109,9 @@ def build_meal_workflow(
 
     def planning(state):
         report(
-            "Planification : GLM prépare les recettes et les quantités pour vos repas…"
+            source_text(
+                "text.meal_planning_glm_is_preparing_recipes_and_quantities_for"
+            )
         )
         requests = [a for a in state["commands"].actions if a.service == "meal_request"]
         return {
@@ -119,7 +122,9 @@ def build_meal_workflow(
 
     def preferences(state):
         report(
-            "Préférences : vérification des recettes et des aliments exclus du foyer…"
+            source_text(
+                "text.preferences_checking_recipes_against_household_food_exclusions"
+            )
         )
         return {
             "conflicts": preference_conflicts(
@@ -138,8 +143,9 @@ def build_meal_workflow(
 
     def adapt(state):
         report(
-            "Adaptation : remplacement des ingrédients incompatibles "
-            "dans les repas concernés…"
+            source_text(
+                "text.adapting_replacing_incompatible_ingredients_in_the_affected_meals"
+            )
         )
         offset = state["context"].get("planned_meal_count", 0)
         requests = [a for a in state["commands"].actions if a.service == "meal_request"]
@@ -167,11 +173,8 @@ def build_meal_workflow(
         return {"meals": meals, "adaptation_attempts": state["adaptation_attempts"] + 1}
 
     def ask_alternative(state):
-        vegetarian = (
-            "vegetarian"
-            if state["context"].get("language", "fr") == "en"
-            else "végétarien"
-        )
+        language = state["context"].get("language", "fr")
+        vegetarian = translate("workflow.vegetarian", language)
         details = "; ".join(
             f"{issue['meal_index'] + 1}: {issue['title']} "
             f"({', '.join(issue['excluded_foods_found']) or vegetarian})"
@@ -180,15 +183,7 @@ def build_meal_workflow(
         # Clarifications share the coordinator's 1,000-character limit, including
         # batches with many incompatible dishes or long food names.
         details = details[:500]
-        question = (
-            "I could not produce a compatible variant after two adaptations. "
-            f"Meals to adapt: {details}. Which alternative dish would you like? "
-            "Your food exclusions are kept. No changes have been saved."
-            if state["context"].get("language", "fr") == "en"
-            else "Je n’ai pas obtenu de variante compatible après deux adaptations. "
-            f"Repas à adapter : {details}. Quel autre plat souhaitez-vous ? "
-            "Vos exclusions sont conservées. Aucun changement n’a été enregistré."
-        )
+        question = translate("workflow.ask_alternative", language, details=details)
         return {
             "commands": CoordinatorProposal(clarification=question),
             "meals": [],
@@ -197,7 +192,9 @@ def build_meal_workflow(
 
     def groceries(state):
         report(
-            "Courses : calcul des besoins et déduction des quantités déjà en réserve…"
+            source_text(
+                "text.groceries_calculating_requirements_and_subtracting_pantry_quantities"
+            )
         )
         requirements = calculate_execution_groceries(
             state["commands"], state["meals"], state["context"]
@@ -221,16 +218,7 @@ def build_meal_workflow(
                 f"{translate_food(need.name, language)} ({need.required:g} {need.unit})"
                 for need in ambiguous[:3]
             )
-            question = (
-                f"The recipes require {foods}, but your pantry lists these foods "
-                "as pieces or packages. What is the weight or volume per package, "
-                "or the total available in g or ml? No package size will be assumed."
-                if language == "en"
-                else f"Les recettes nécessitent {foods}, mais ces aliments sont "
-                "en réserve "
-                "en pièces ou en pots. Quel est le poids ou le volume par contenant, "
-                "ou le total disponible en g ou ml ? Aucun format ne sera supposé."
-            )
+            question = translate("workflow.ask_package_size", language, foods=foods)
             return {
                 "commands": CoordinatorProposal(clarification=question),
                 "meals": [],
@@ -239,7 +227,11 @@ def build_meal_workflow(
         return {"groceries": requirements}
 
     def verify_food_exclusions(state):
-        report("Vérification : recettes et courses comparées aux aliments à éviter…")
+        report(
+            source_text(
+                "text.verification_checking_recipes_and_groceries_against_foods_to_avoid"
+            )
+        )
         purchases = [
             action
             for action in state["commands"].actions

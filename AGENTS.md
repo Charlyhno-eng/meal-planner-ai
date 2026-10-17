@@ -80,4 +80,5 @@ Agents should have clear responsibilities, structured inputs/outputs, and valida
 ## Working rules
 
 - Follow existing project conventions and keep changes focused on the ticket.
+- Keep built-in translatable text in `src/localization/fr.json` and `en.json`, with matching stable identifiers referenced by Python and QML. Preserve canonical data identities when changing display text.
 - Update these instructions only when lasting project guidance changes.

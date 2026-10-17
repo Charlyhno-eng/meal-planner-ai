@@ -3,6 +3,7 @@ import QtQuick.Controls
 
 ComboBox {
     id: control
+    displayText: I18n.tr(currentText)
     implicitHeight: 44
     font.pixelSize: 14
     leftPadding: 14
@@ -14,7 +15,7 @@ ComboBox {
         border.width: control.activeFocus ? 2 : 1
     }
     contentItem: Text {
-        text: I18n.tr(control.displayText)
+        text: control.displayText
         color: Theme.text
         font: control.font
         verticalAlignment: Text.AlignVCenter
@@ -28,10 +29,10 @@ ComboBox {
     }
     delegate: ItemDelegate {
         width: control.width
-        text: control.textRole ? modelData[control.textRole] : modelData
+        text: I18n.tr(control.textRole ? modelData[control.textRole] : modelData)
         highlighted: control.highlightedIndex === index
         contentItem: Text {
-            text: I18n.tr(parent.text)
+            text: parent.text
             color: Theme.text
             font.pixelSize: 14
             elide: Text.ElideRight

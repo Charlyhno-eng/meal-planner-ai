@@ -5,6 +5,7 @@ import re
 from src.domain.dietary import conflicting_terms
 from src.domain.foods import food_terms
 from src.errors import MealPlannerError
+from src.localization import source_text
 from src.models.coordinator import RequestedMeal
 from src.models.household import exclusion_labels
 
@@ -87,10 +88,10 @@ def check_preferences(
         return
     if conflicts[0]["requires_vegetarian"]:
         raise PreferenceConflict(
-            "La recette proposée ne respecte pas le régime végétarien. "
-            "Précisez une variante et réessayez."
+            source_text("text.the_proposed_recipe_does_not_respect_the_vegetarian_diet")
         )
     raise PreferenceConflict(
-        "La recette proposée contient un aliment exclu du foyer. "
-        "Précisez une variante et réessayez."
+        source_text(
+            "text.the_proposed_recipe_contains_an_excluded_household_food_specify"
+        )
     )

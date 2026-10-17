@@ -12,52 +12,52 @@ ScrollView {
     property bool motionEnabled: true
     readonly property color incomingColor: "#a5c8e8"
     readonly property var workflowLinks: [
-        {from: "user", to: "coordinator", fromAgent: -1, toAgent: 0, label: I18n.tr("Demande")},
-        {from: "coordinator", to: "planning", fromAgent: 0, toAgent: 1, label: I18n.tr("Repas")},
-        {from: "coordinator", to: "preferences", fromAgent: 0, toAgent: 2, label: I18n.tr("Préférences")},
-        {from: "coordinator", to: "groceries", fromAgent: 0, toAgent: 3, label: I18n.tr("Repas retenus")},
-        {from: "groceries", to: "verification", fromAgent: 3, toAgent: 4, label: I18n.tr("Liste")},
-        {from: "pantry", to: "planning", fromAgent: 5, toAgent: 1, label: I18n.tr("Stock")},
-        {from: "pantry", to: "groceries", fromAgent: 5, toAgent: 3, label: I18n.tr("Quantités en réserve")},
-        {from: "planning", to: "groceries", fromAgent: 1, toAgent: 3, label: I18n.tr("Ingrédients requis")},
-        {from: "groceries", to: "planning", fromAgent: 3, toAgent: 1, label: I18n.tr("Réserve / achats")}
+        {from: "user", to: "coordinator", fromAgent: -1, toAgent: 0, label: I18n.tr("text.request")},
+        {from: "coordinator", to: "planning", fromAgent: 0, toAgent: 1, label: I18n.tr("text.meals_2")},
+        {from: "coordinator", to: "preferences", fromAgent: 0, toAgent: 2, label: I18n.tr("text.preferences")},
+        {from: "coordinator", to: "groceries", fromAgent: 0, toAgent: 3, label: I18n.tr("text.selected_meals")},
+        {from: "groceries", to: "verification", fromAgent: 3, toAgent: 4, label: I18n.tr("text.list")},
+        {from: "pantry", to: "planning", fromAgent: 5, toAgent: 1, label: I18n.tr("text.stock")},
+        {from: "pantry", to: "groceries", fromAgent: 5, toAgent: 3, label: I18n.tr("text.pantry_quantities")},
+        {from: "planning", to: "groceries", fromAgent: 1, toAgent: 3, label: I18n.tr("text.required_ingredients")},
+        {from: "groceries", to: "planning", fromAgent: 3, toAgent: 1, label: I18n.tr("text.stock_purchases")}
     ]
     readonly property var agents: [
         {
-            title: I18n.tr("Orchestrateur"), kind: "coordinator", tint: "#b7d99a",
-            role: I18n.tr("Orchestre la planification des repas, les préférences alimentaires et la liste de courses."),
-            input: I18n.tr("Votre demande, la réserve, le foyer, les invités et les préférences."),
-            output: I18n.tr("Des consignes pour les agents de repas, de préférences et de courses.")
+            title: I18n.tr("text.orchestrator"), kind: "coordinator", tint: "#b7d99a",
+            role: I18n.tr("text.coordinates_meal_planning_dietary_preferences_and_grocery_list_preparation"),
+            input: I18n.tr("text.your_request_pantry_household_guests_and_preferences"),
+            output: I18n.tr("text.instructions_for_the_meal_preferences_and_grocery_agents")
         },
         {
-            title: I18n.tr("Planification des repas"), kind: "planning", tint: "#a5c8e8",
-            role: I18n.tr("Compose les repas en tenant compte des ingrédients, de la période et des convives."),
-            input: I18n.tr("Les consignes de l’orchestrateur, le stock de la réserve et le nombre de convives."),
-            output: I18n.tr("Des recettes et leurs besoins transmis aux courses ; une couverture par ingrédient affichée dans les repas.")
+            title: I18n.tr("text.meal_planning"), kind: "planning", tint: "#a5c8e8",
+            role: I18n.tr("text.plans_meals_based_on_ingredients_the_planning_period_and"),
+            input: I18n.tr("text.orchestrator_instructions_pantry_stock_and_the_number_of_diners"),
+            output: I18n.tr("text.recipes_and_their_requirements_sent_to_groceries_ingredient_coverage")
         },
         {
-            title: I18n.tr("Préférences alimentaires"), kind: "preferences", tint: "#d2b8e8",
-            role: I18n.tr("Contrôle les recettes pour respecter les préférences et les aliments exclus du foyer."),
-            input: I18n.tr("Les recettes proposées, le régime et les aliments exclus."),
-            output: I18n.tr("Des repas compatibles avec les préférences du foyer.")
+            title: I18n.tr("text.food_preferences"), kind: "preferences", tint: "#d2b8e8",
+            role: I18n.tr("text.checks_recipes_against_household_preferences_and_excluded_foods"),
+            input: I18n.tr("text.proposed_recipes_dietary_preferences_and_excluded_foods"),
+            output: I18n.tr("text.meals_compatible_with_household_preferences")
         },
         {
-            title: I18n.tr("Liste de courses"), kind: "groceries", tint: "#e5c397",
-            role: I18n.tr("Calcule les besoins et distingue les ingrédients en réserve de ceux à acheter."),
-            input: I18n.tr("Les repas retenus, les quantités en réserve et les portions."),
-            output: I18n.tr("Les quantités à acheter et la couverture des ingrédients renvoyée aux repas.")
+            title: I18n.tr("text.grocery_list"), kind: "groceries", tint: "#e5c397",
+            role: I18n.tr("text.calculates_requirements_and_separates_pantry_ingredients_from_those_to"),
+            input: I18n.tr("text.selected_meals_pantry_quantities_and_servings"),
+            output: I18n.tr("text.purchase_quantities_and_ingredient_coverage_returned_to_meals")
         },
         {
-            title: I18n.tr("Vérification des courses"), kind: "verification", tint: "#94d1c6",
-            role: I18n.tr("Vérifie la liste de courses produite et signale les manques ou incohérences."),
-            input: I18n.tr("La liste de courses et les quantités retenues par l’agent des courses."),
-            output: I18n.tr("Les éventuels manques et incohérences détectés.")
+            title: I18n.tr("text.grocery_verification"), kind: "verification", tint: "#94d1c6",
+            role: I18n.tr("text.checks_the_grocery_list_and_reports_missing_items_or"),
+            input: I18n.tr("text.the_grocery_list_and_quantities_prepared_by_the_grocery"),
+            output: I18n.tr("text.any_missing_items_or_inconsistencies_found")
         },
         {
-            title: I18n.tr("Réserve"), kind: "pantry", tint: "#d5c49f",
-            role: I18n.tr("Service local : conserve le stock et fournit les quantités disponibles aux repas et aux courses."),
-            input: I18n.tr("Les aliments et quantités saisis dans la réserve."),
-            output: I18n.tr("Le stock disponible pour préparer les recettes et calculer les achats manquants.")
+            title: I18n.tr("text.pantry"), kind: "pantry", tint: "#d5c49f",
+            role: I18n.tr("text.local_service_maintains_stock_and_supplies_available_quantities_to"),
+            input: I18n.tr("text.foods_and_quantities_entered_in_the_pantry"),
+            output: I18n.tr("text.available_stock_for_preparing_recipes_and_calculating_missing_purchases")
         }
     ]
     readonly property var selected: agents[selectedAgent]
@@ -68,16 +68,16 @@ ScrollView {
         RowLayout {
             Layout.fillWidth: true
             Heading {
-                text: I18n.tr("Circuit des agents")
+                text: I18n.tr("text.agent_workflow")
                 Layout.fillWidth: true
             }
             ActionButton {
                 objectName: "agentAnimationToggle"
-                text: page.motionEnabled ? I18n.tr("Pause") : I18n.tr("Animer")
+                text: page.motionEnabled ? I18n.tr("text.pause") : I18n.tr("text.animate")
                 quiet: true
                 implicitHeight: 30
                 font.pixelSize: 11
-                Accessible.name: page.motionEnabled ? I18n.tr("Mettre les animations en pause") : I18n.tr("Reprendre les animations")
+                Accessible.name: page.motionEnabled ? I18n.tr("text.pause_animations") : I18n.tr("text.resume_animations")
                 onClicked: page.motionEnabled = !page.motionEnabled
             }
             Rectangle {
@@ -88,14 +88,14 @@ ScrollView {
                 Text {
                     id: architectureLabel
                     anchors.centerIn: parent
-                    text: I18n.tr("Échanges illustrés")
+                    text: I18n.tr("text.illustrated_exchanges")
                     font.pixelSize: 11
                     color: Theme.muted
                 }
             }
         }
         Caption {
-            text: I18n.tr("Sélectionnez un agent pour explorer son rôle et ses échanges.")
+            text: I18n.tr("text.select_an_agent_to_explore_its_role_and_exchanges")
             Layout.fillWidth: true
         }
         Panel {
@@ -282,8 +282,8 @@ ScrollView {
                     radius: 16
                     color: Theme.surface
                     border.color: Theme.border
-                    Accessible.name: I18n.tr("Utilisateur")
-                    Accessible.description: I18n.tr("Envoie ses données de planification à l’orchestrateur.")
+                    Accessible.name: I18n.tr("text.user")
+                    Accessible.description: I18n.tr("text.sends_planning_details_to_the_orchestrator")
                     Accessible.role: Accessible.StaticText
                     ColumnLayout {
                         anchors.fill: parent
@@ -307,7 +307,7 @@ ScrollView {
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: I18n.tr("Utilisateur")
+                            text: I18n.tr("text.user")
                             color: Theme.text
                             font.pixelSize: 13
                             font.weight: Font.DemiBold
@@ -365,13 +365,13 @@ ScrollView {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 10
                 Rectangle { width: 22; height: 2; color: page.incomingColor }
-                Caption { text: I18n.tr("Entrée de l’agent sélectionné"); font.pixelSize: 11 }
+                Caption { text: I18n.tr("text.selected_agent_s_input"); font.pixelSize: 11 }
                 Rectangle { width: 22; height: 2; color: Theme.accent; Layout.leftMargin: 12 }
-                Caption { text: I18n.tr("Sortie de l’agent sélectionné"); font.pixelSize: 11 }
+                Caption { text: I18n.tr("text.selected_agent_s_output"); font.pixelSize: 11 }
             }
         }
         Caption {
-            text: I18n.tr("Animation illustrative des échanges, sans suivi d’activité en direct.")
+            text: I18n.tr("text.illustrative_exchange_animation_without_live_activity_tracking")
             Layout.fillWidth: true
             font.pixelSize: 11
         }
@@ -405,7 +405,7 @@ ScrollView {
                         font.pixelSize: 18
                         Layout.fillWidth: true
                     }
-                    Caption { text: page.selected.kind === "pantry" ? I18n.tr("Service local") : "0" + (page.selectedAgent + 1) + " / 05" }
+                    Caption { text: page.selected.kind === "pantry" ? I18n.tr("text.local_service") : "0" + (page.selectedAgent + 1) + " / 05" }
                 }
                 Caption {
                     objectName: "selectedAgentRole"
@@ -420,8 +420,8 @@ ScrollView {
                     rowSpacing: 12
                     Repeater {
                         model: [
-                            {label: I18n.tr("Reçoit"), body: page.selected.input, tint: page.incomingColor},
-                            {label: I18n.tr("Résultat"), body: page.selected.output, tint: Theme.accent}
+                            {label: I18n.tr("text.receives"), body: page.selected.input, tint: page.incomingColor},
+                            {label: I18n.tr("text.result"), body: page.selected.output, tint: Theme.accent}
                         ]
                         delegate: Rectangle {
                             required property var modelData
@@ -463,7 +463,7 @@ ScrollView {
             }
             Caption {
                 objectName: "agentInteractionsStatus"
-                text: I18n.tr("Orchestrateur, planification, préférences et courses actifs. La vérification des courses reste à implémenter.")
+                text: I18n.tr("text.orchestrator_meal_planning_preferences_and_groceries_are_active_grocery")
                 Layout.fillWidth: true
             }
         }

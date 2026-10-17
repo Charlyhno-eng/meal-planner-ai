@@ -30,7 +30,7 @@ ScrollView {
                 implicitHeight: page.compact ? 80 : 88
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1
-                text: I18n.tr("repas planifiés")
+                text: I18n.tr("text.planned_meals")
                 iconName: "planning"
                 count: page.store.meals.length
                 onClicked: page.planningRequested()
@@ -40,7 +40,7 @@ ScrollView {
                 implicitHeight: page.compact ? 80 : 88
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1
-                text: I18n.tr("aliments en réserve")
+                text: I18n.tr("text.foods_in_your_pantry_2")
                 iconName: "pantry"
                 count: page.store.pantry.length
                 onClicked: page.pantryRequested()
@@ -50,7 +50,7 @@ ScrollView {
                 implicitHeight: page.compact ? 80 : 88
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1
-                text: I18n.tr("articles à acheter")
+                text: I18n.tr("text.items_to_buy")
                 iconName: "groceries"
                 count: page.store.groceries.filter(item => !item.available && !item.checked).length
                 onClicked: page.groceriesRequested()
@@ -61,14 +61,14 @@ ScrollView {
             Layout.topMargin: 6
             spacing: 6
             Heading {
-                text: I18n.tr("Que souhaitez-vous organiser ?")
+                text: I18n.tr("text.what_would_you_like_to_organize")
                 font.pixelSize: page.compact ? 24 : 28
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
                 elide: Text.ElideNone
             }
             Caption {
-                text: I18n.tr("Décrivez un repas à préparer, un achat à ajouter ou les aliments disponibles.")
+                text: I18n.tr("text.describe_a_meal_to_cook_a_purchase_to_add")
                 Layout.fillWidth: true
             }
         }
@@ -80,13 +80,13 @@ ScrollView {
             Caption {
                 Layout.fillWidth: true
                 color: Theme.accent
-                text: I18n.tr("Les recettes sont adaptées automatiquement aux préférences de chaque repas.")
+                text: I18n.tr("text.recipes_automatically_adapt_to_each_meal_s_preferences")
             }
             Caption {
                 objectName: "householdDietarySummary"
                 Layout.fillWidth: true
                 visible: parent.householdFoods.length > 0
-                text: I18n.tr("Tous les repas — aliments à éviter : ") + parent.householdFoods
+                text: I18n.tr("text.every_meal_foods_to_avoid") + parent.householdFoods
             }
             Repeater {
                 model: page.store.settings.guest_groups
@@ -95,7 +95,7 @@ ScrollView {
                     required property int index
                     objectName: "guestDietarySummary-" + index
                     Layout.fillWidth: true
-                    text: (modelData.name || I18n.tr("Les invités")) + " · " + modelData.meals.map(i => I18n.tr("Repas ") + (i + 1)).join(", ") + " · " + modelData.members.map(member => (member.name || I18n.tr("Les invités")) + (member.foods_to_avoid ? " : " + member.foods_to_avoid : "")).join(" ; ")
+                    text: (modelData.name || I18n.tr("text.guests_2")) + " · " + modelData.meals.map(i => I18n.tr("prefix.meal") + (i + 1)).join(", ") + " · " + modelData.members.map(member => (member.name || I18n.tr("text.guests_2")) + (member.foods_to_avoid ? " : " + member.foods_to_avoid : "")).join(" ; ")
                 }
             }
         }
@@ -105,9 +105,9 @@ ScrollView {
             Repeater {
                 id: fields
                 model: [
-                    { label: "Mes repas", icon: "planning", name: "planningRequest", description: "Des envies aux recettes", example: "Je veux faire un tiramisu pour six personnes.", prompt: "Je veux faire un tiramisu pour six personnes.", exampleIndex: 0, context: "" },
-                    { label: "Ma réserve", icon: "pantry", name: "pantryRequest", description: "Ce que vous avez déjà", example: "J’ai 500 g de riz.", prompt: "J’ai 500 g de riz.", exampleIndex: 2, context: "Aliments disponibles en réserve : " },
-                    { label: "Mes courses", icon: "groceries", name: "groceryRequest", description: "Pour ne rien oublier", example: "Ajoute trois pommes de terre à acheter la semaine prochaine.", prompt: "Ajoute trois pommes de terre à acheter la semaine prochaine.", exampleIndex: 1, context: "Courses à acheter : " }
+                    { label: "text.my_meals", icon: "planning", name: "planningRequest", description: "text.from_ideas_to_recipes", example: "text.i_want_to_make_tiramisu_for_six_people", prompt: "text.i_want_to_make_tiramisu_for_six_people", exampleIndex: 0, context: "" },
+                    { label: "text.my_pantry", icon: "pantry", name: "pantryRequest", description: "text.what_you_already_have", example: "text.i_have_500_g_of_rice", prompt: "text.i_have_500_g_of_rice", exampleIndex: 2, context: "text.available_pantry_food" },
+                    { label: "text.my_groceries", icon: "groceries", name: "groceryRequest", description: "text.remember_every_essential", example: "text.add_three_potatoes_to_buy_next_week", prompt: "text.add_three_potatoes_to_buy_next_week", exampleIndex: 1, context: "text.groceries_to_buy" }
                 ]
                 delegate: Panel {
                     id: card
@@ -186,7 +186,7 @@ ScrollView {
                                         id: request
                                         objectName: card.modelData.name
                                         enabled: !page.assistant.busy && !page.assistant.recording
-                                        Accessible.description: I18n.tr("Exemple : ") + I18n.tr(card.modelData.example)
+                                        Accessible.description: I18n.tr("text.example") + I18n.tr(card.modelData.example)
                                         Accessible.name: I18n.tr(card.modelData.label)
                                         wrapMode: TextEdit.WordWrap
                                         color: Theme.text
@@ -201,7 +201,7 @@ ScrollView {
                                             x: request.leftPadding
                                             y: request.topPadding
                                             width: request.width - request.leftPadding - request.rightPadding
-                                            text: I18n.tr("Exemple : ") + I18n.tr(card.modelData.example)
+                                            text: I18n.tr("text.example") + I18n.tr(card.modelData.example)
                                             font: request.font
                                             opacity: 0.6
                                             visible: request.text.length === 0
@@ -216,7 +216,7 @@ ScrollView {
                                         id: microphone
                                         objectName: card.index === 0 ? "dictationButton" : card.modelData.name + "DictationButton"
                                         readonly property bool recordingHere: page.assistant.recording && page.dictationTarget === card.index
-                                        text: recordingHere ? I18n.tr("Arrêter et transcrire") : I18n.tr("Dicter ma demande")
+                                        text: recordingHere ? I18n.tr("text.stop_and_transcribe") : I18n.tr("text.dictate_my_request")
                                         Accessible.description: I18n.tr(card.modelData.label)
                                         quiet: true
                                         implicitWidth: 40
@@ -255,7 +255,7 @@ ScrollView {
                                     }
                                     ActionButton {
                                         visible: microphone.recordingHere
-                                        text: I18n.tr("Annuler")
+                                        text: I18n.tr("text.cancel")
                                         quiet: true
                                         implicitWidth: contentItem.implicitWidth + 8
                                         implicitHeight: 36
@@ -268,8 +268,8 @@ ScrollView {
                                         id: send
                                         visible: !microphone.recordingHere
                                         objectName: card.index === 0 ? "generatePlanButton" : card.modelData.name + "SendButton"
-                                        text: I18n.tr("Envoyer")
-                                        Accessible.name: I18n.tr("Envoyer la demande") + " — " + I18n.tr(card.modelData.label)
+                                        text: I18n.tr("text.send")
+                                        Accessible.name: I18n.tr("text.send_request") + " — " + I18n.tr(card.modelData.label)
                                         primary: true
                                         implicitHeight: 36
                                         implicitWidth: 100
@@ -311,16 +311,16 @@ ScrollView {
                             spacing: 12
                             Caption {
                                 Layout.fillWidth: true
-                                text: I18n.tr("Renseignez les quantités dès l’ajout : poids total ou nombre de boîtes et poids par boîte.")
+                                text: I18n.tr("text.enter_quantities_when_adding_food_total_weight_or_number")
                             }
                             Caption {
                                 Layout.fillWidth: true
-                                text: I18n.tr("Exemple : 2 pots de mascarpone de 250 g = 500 g en réserve.")
+                                text: I18n.tr("text.example_2_tubs_of_mascarpone_at_250_g_each")
                             }
                             ActionButton {
                                 objectName: card.index === 1 ? "addPantryFoodButton" : ""
                                 Layout.fillWidth: true
-                                text: I18n.tr("Ajouter un aliment")
+                                text: I18n.tr("text.add_food_2")
                                 primary: true
                                 onClicked: page.foodRequested()
                             }
@@ -330,7 +330,7 @@ ScrollView {
                             id: example
                             visible: card.index !== 1
                             objectName: "requestExample" + card.modelData.exampleIndex
-                            text: I18n.tr("Insérer un exemple")
+                            text: I18n.tr("text.insert_an_example")
                             quiet: true
                             implicitHeight: 28
                             font.pixelSize: 11
@@ -356,7 +356,7 @@ ScrollView {
             }
         }
         Caption {
-            text: page.assistant.recording ? I18n.tr("Enregistrement en cours — 5 minutes maximum.") : page.assistant.busy ? page.assistant.status : I18n.tr("Dictée locale avec Parakeet. Le texte et le contexte sont envoyés à GLM pour interprétation.")
+            text: page.assistant.recording ? I18n.tr("text.recording_5_minutes_maximum") : page.assistant.busy ? page.assistant.status : I18n.tr("text.local_dictation_with_parakeet_text_and_context_are_sent")
             Layout.fillWidth: true
             font.pixelSize: 11
             Accessible.role: Accessible.StaticText
@@ -388,7 +388,7 @@ ScrollView {
                     }
                     Caption {
                         visible: page.assistant.busy
-                        text: elapsed.seconds + I18n.tr(" s écoulées")
+                        text: elapsed.seconds + I18n.tr("text.s_elapsed")
                     }
                 }
                 Repeater {

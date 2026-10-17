@@ -15,6 +15,7 @@ from src.agents.food_preferences import (
 )
 from src.agents.grocery_list import calculate_groceries
 from src.domain.dietary import conflicting_terms
+from src.localization import SUPPORTED_LANGUAGES
 from src.models.coordinator import (
     CoordinatorData,
     CoordinatorProposal,
@@ -54,18 +55,18 @@ from src.workflow.coordinator import build_coordinator_workflow
 from src.workflow.meal_request import calculate_execution_groceries
 
 MONTHS = [
-    "janvier",
-    "février",
-    "mars",
-    "avril",
-    "mai",
-    "juin",
-    "juillet",
-    "août",
-    "septembre",
-    "octobre",
-    "novembre",
-    "décembre",
+    "month.january",
+    "month.february",
+    "month.march",
+    "month.april",
+    "month.may",
+    "month.june",
+    "month.july",
+    "month.august",
+    "month.september",
+    "month.october",
+    "month.november",
+    "month.december",
 ]
 
 
@@ -73,8 +74,12 @@ def quantity_text(amount: float, unit: str, language: str = "fr") -> str:
     number = f"{amount:g}"
     if language == "fr":
         number = number.replace(".", ",")
-    unit = translate(unit, language)
-    return f"{number} {unit}{'s' if unit in ('pièce', 'piece') and amount > 1 else ''}"
+    unit = (
+        translate("unit.pieces" if amount > 1 else "unit.piece", language)
+        if unit == "pièce"
+        else translate(unit, language)
+    )
+    return f"{number} {unit}"
 
 
 class DemoState(QObject):
@@ -98,7 +103,7 @@ class DemoState(QObject):
             try:
                 self._glm_key = load_glm_key(self._glm_path)
             except (OSError, ValueError, KeyError, TypeError):
-                self._glm_error = "Impossible de lire la clé API GLM."
+                self._glm_error = "text.unable_to_read_the_glm_api_key"
         self._settings = {
             "start": date.today().isoformat(),
             "days": 7,
@@ -119,7 +124,7 @@ class DemoState(QObject):
                 if household is not None:
                     self._settings.update(household.model_dump())
             except (OSError, ValueError):
-                self._household_error = "Impossible de lire data/household.json."
+                self._household_error = "text.unable_to_read_data_household_json"
         self._pantry = []
         self._next_id = 1
         self._plan = []
@@ -135,8 +140,7 @@ class DemoState(QObject):
                 self._coordinator_data = load_coordinator(self._coordinator_path)
             except (OSError, ValueError):
                 self._coordinator_error = (
-                    "Impossible de lire data/coordinator.json. Corrigez le fichier "
-                    "avant d’enregistrer de nouvelles demandes."
+                    "text.unable_to_read_data_coordinator_json_fix_the_file"
                 )
         self._assistant = PlanningAssistant(self)
 
@@ -301,7 +305,7 @@ class DemoState(QObject):
         try:
             self._save_coordinator(data)
         except (ValueError, OSError):
-            self._notify("Impossible d’enregistrer les demandes. Réessayez.")
+            self._notify("text.unable_to_save_requests_try_again")
             return False
         self._coordinator_data = data
         self._checked.discard("request:" + record_id)
@@ -373,7 +377,7 @@ class DemoState(QObject):
     @Slot(str, result=bool)
     def setLanguage(self, language):
         """Update session translations without persisting an OS language override."""
-        if language not in ("fr", "en"):
+        if language not in SUPPORTED_LANGUAGES:
             return False
         self._language = language
         self.changed.emit()
@@ -394,7 +398,7 @@ class DemoState(QObject):
             if self._glm_path is not None:
                 save_glm_key(self._glm_path, key)
         except OSError:
-            self._glm_error = "Impossible d’enregistrer la clé API GLM."
+            self._glm_error = "text.unable_to_save_the_glm_api_key"
             self.changed.emit()
             return False
         self._glm_key = key
@@ -479,7 +483,7 @@ class DemoState(QObject):
             id=index,
             **self._meal_dietary_info(index),
             art=self._plan[index],
-            label=f"{self.translate('Repas ')}{index + 1}",
+            label=f"{self.translate('prefix.meal')}{index + 1}",
             guests=guests,
             servings=servings,
             ingredients=[
@@ -511,7 +515,7 @@ class DemoState(QObject):
             vegetarian=recipe.vegetarian,
             color="#cdb781",
             art=index,
-            label=f"{self.translate('Repas ')}{len(self._plan) + index + 1}",
+            label=f"{self.translate('prefix.meal')}{len(self._plan) + index + 1}",
             servings=servings,
             baseServings=item.servings,
             guests=guests,
@@ -636,7 +640,7 @@ class DemoState(QObject):
             data = CoordinatorData.model_validate(data.model_dump())
             self._save_coordinator(data)
         except (ValueError, OSError):
-            self._notify("Impossible d’enregistrer les demandes. Réessayez.")
+            self._notify("text.unable_to_save_requests_try_again")
             return False
         self._coordinator_data = data
         self.changed.emit()
@@ -677,7 +681,7 @@ class DemoState(QObject):
         try:
             date.fromisoformat(start)
         except ValueError:
-            self._notify("Saisissez une date valide : AAAA-MM-JJ.")
+            self._notify("text.enter_a_valid_date_yyyy_mm_dd")
             return False
         try:
             settings = PlanningSettings(
@@ -700,10 +704,7 @@ class DemoState(QObject):
                 ),
             )
         except ValidationError:
-            self._notify(
-                "Choisissez 1 à 14 jours, 1 à 28 repas et 1 à 12 personnes, "
-                "avec une période valide."
-            )
+            self._notify("text.choose_1_14_days_1_28_meals_and_1")
             return False
         try:
             check_preferences(
@@ -718,19 +719,19 @@ class DemoState(QObject):
             self._eligible(index) for index in range(self._settings["count"])
         ):
             self._settings = previous
-            self._notify("Aucune recette ne correspond à ces préférences.")
+            self._notify("text.no_recipe_matches_these_preferences")
             return False
         try:
             self._save_household(self._settings)
         except (OSError, ValueError):
             self._settings = previous
-            self._notify("Impossible d’enregistrer le foyer. Réessayez.")
+            self._notify("text.unable_to_save_the_household_try_again")
             return False
         self._guests.clear()
         self._checked.clear()
         self._make_plan()
         self.changed.emit()
-        self._notify("Paramètres du planning actualisés")
+        self._notify("text.planning_settings_updated")
         return True
 
     @Property(str, notify=changed)
@@ -755,20 +756,20 @@ class DemoState(QObject):
             return False
         eligible = self._eligible(index)
         if len(eligible) < 2:
-            self._notify("Aucune autre recette disponible.")
+            self._notify("text.no_other_recipe_available")
             return False
         current = eligible.index(self._plan[index])
         self._plan[index] = eligible[(current + 1) % len(eligible)]
         self._checked.clear()
         self.changed.emit()
-        self._notify("Repas remplacé · courses actualisées")
+        self._notify("text.meal_replaced_groceries_updated")
         return True
 
     @Slot(int, str, float, str, str, result=bool)
     def saveFood(self, item_id, name, amount, unit, category):
         name = canonical_food(name.strip())
         if not name or not (0 < amount <= 100000) or unit not in ("g", "ml", "pièce"):
-            self._notify("Ajoutez un nom et une quantité supérieure à zéro.")
+            self._notify("text.add_a_name_and_a_quantity_greater_than_zero")
             return False
         if category not in ("Fruits & légumes", "Épicerie", "Produits frais"):
             return False
@@ -786,7 +787,7 @@ class DemoState(QObject):
                 return False
         self._checked.clear()
         self.changed.emit()
-        self._notify("Réserve actualisée")
+        self._notify("text.pantry_updated")
         return True
 
     @Slot(int)
@@ -794,7 +795,7 @@ class DemoState(QObject):
         self._pantry = [item for item in self._pantry if item["id"] != item_id]
         self._checked.clear()
         self.changed.emit()
-        self._notify("Aliment retiré")
+        self._notify("text.food_removed")
 
     @Slot(int, int, result=bool)
     def setMealServings(self, index, servings):
@@ -814,7 +815,7 @@ class DemoState(QObject):
             data = CoordinatorData.model_validate(data.model_dump())
             self._save_coordinator(data)
         except (ValueError, OSError):
-            self._notify("Impossible d’enregistrer les demandes. Réessayez.")
+            self._notify("text.unable_to_save_requests_try_again")
             return False
         self._coordinator_data = data
         self.changed.emit()
@@ -824,7 +825,7 @@ class DemoState(QObject):
         return {
             "foodsToAvoid": exclusion_labels(self._settings, index),
             "guestNames": [
-                guest["name"] or self.translate("Personne ") + str(number + 1)
+                guest["name"] or self.translate("prefix.person") + str(number + 1)
                 for number, guest in enumerate(meal_guests(self._settings, index))
             ],
         }
@@ -853,10 +854,7 @@ class DemoState(QObject):
                     raise ValueError("Guest preference conflict")
             self._save_household(settings)
         except (ValueError, OSError, PreferenceConflict):
-            self._notify(
-                "Impossible d’enregistrer les invités. "
-                "Vérifiez les préférences et les repas."
-            )
+            self._notify("text.unable_to_save_guests_check_preferences_and_meals")
             return False
         self._settings = settings
         self._checked.clear()
@@ -872,7 +870,7 @@ class DemoState(QObject):
         try:
             self._save_household(settings)
         except (ValueError, OSError):
-            self._notify("Impossible d’enregistrer le foyer. Réessayez.")
+            self._notify("text.unable_to_save_the_household_try_again")
             return False
         self._settings = settings
         self._checked.clear()
@@ -890,7 +888,7 @@ class DemoState(QObject):
             try:
                 self._save_coordinator(data)
             except (ValueError, OSError):
-                self._notify("Impossible d’enregistrer les demandes. Réessayez.")
+                self._notify("text.unable_to_save_requests_try_again")
                 return
             self._coordinator_data = data
         elif count:
@@ -899,7 +897,7 @@ class DemoState(QObject):
             self._guests.pop(index, None)
         self._checked.clear()
         self.changed.emit()
-        self._notify("Invités actualisés · portions ajustées")
+        self._notify("text.guests_updated_servings_adjusted")
 
     @Slot(str)
     def toggleGrocery(self, key):
@@ -945,7 +943,7 @@ class DemoState(QObject):
             else:
                 existing["amount"] += purchase.amount
                 if existing["amount"] > 100000:
-                    self._notify("La quantité en réserve dépasserait 100 000.")
+                    self._notify("text.the_pantry_quantity_would_exceed_100_000")
                     return
         purchased_ids = {item.id for item in purchases}
         data = self._coordinator_data.model_copy(deep=True)
@@ -955,14 +953,14 @@ class DemoState(QObject):
         try:
             self._save_coordinator(data)
         except (ValueError, OSError):
-            self._notify("Impossible d’enregistrer les demandes. Réessayez.")
+            self._notify("text.unable_to_save_requests_try_again")
             return
         self._coordinator_data = data
         self._pantry = pantry
         self._next_id = next_id
         self._checked.difference_update("request:" + key for key in purchased_ids)
         self.changed.emit()
-        self._notify("Articles cochés ajoutés à la réserve")
+        self._notify("text.checked_items_added_to_the_pantry")
 
     @Slot()
     def copyGroceries(self):
@@ -973,6 +971,6 @@ class DemoState(QObject):
             if not item["available"]
         ]
         QGuiApplication.clipboard().setText(
-            self.translate("Courses") + "\n" + "\n".join(lines)
+            self.translate("text.groceries") + "\n" + "\n".join(lines)
         )
-        self._notify("Liste copiée dans le presse-papiers")
+        self._notify("text.list_copied_to_the_clipboard")

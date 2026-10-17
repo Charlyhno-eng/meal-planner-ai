@@ -14,7 +14,7 @@ Modal {
     readonly property real totalAmount: parsedAmount * (packaged ? packageCount : 1)
     readonly property bool validPackages: !packaged || (/^[0-9]+$/.test(packages.text.trim()) && packageCount > 0 && packageCount <= 100000)
     readonly property bool validAmount: /^[0-9]+([.,][0-9]+)?$/.test(amount.text.trim()) && parsedAmount > 0 && totalAmount <= 100000 && validPackages
-    title: food ? I18n.tr("Modifier l’aliment") : I18n.tr("Ajouter un aliment")
+    title: food ? I18n.tr("text.edit_food") : I18n.tr("text.add_food_2")
     function edit(item) {
         food = item;
         open();
@@ -33,21 +33,21 @@ Modal {
     contentItem: ColumnLayout {
         spacing: 16
         Caption {
-            text: I18n.tr("Aliment")
+            text: I18n.tr("text.food")
         }
         Field {
             id: name
             objectName: "foodName"
             Layout.fillWidth: true
-            placeholderText: I18n.tr("Ex. Tomates cerises")
+            placeholderText: I18n.tr("text.e_g_cherry_tomatoes")
             maximumLength: 80
-            Accessible.name: I18n.tr("Nom de l’aliment")
+            Accessible.name: I18n.tr("text.food_name")
         }
         Choice {
             id: quantityMode
             objectName: "foodQuantityMode"
             Layout.fillWidth: true
-            model: ["Quantité totale", "Boîtes / pots / paquets"]
+            model: ["text.total_quantity", "text.boxes_tubs_packets"]
             onCurrentIndexChanged: if (currentIndex === 1 && unit.currentIndex === 2) unit.currentIndex = 0
         }
         RowLayout {
@@ -56,7 +56,7 @@ Modal {
             ColumnLayout {
                 visible: dialog.packaged
                 Layout.preferredWidth: 110
-                Caption { text: I18n.tr("Nombre de boîtes") }
+                Caption { text: I18n.tr("text.number_of_packages") }
                 Field {
                     id: packages
                     objectName: "foodPackageCount"
@@ -64,13 +64,13 @@ Modal {
                     placeholderText: "2"
                     maximumLength: 6
                     inputMethodHints: Qt.ImhDigitsOnly
-                    Accessible.name: I18n.tr("Nombre de boîtes")
+                    Accessible.name: I18n.tr("text.number_of_packages")
                 }
             }
             ColumnLayout {
                 Layout.fillWidth: true
                 Caption {
-                    text: dialog.packaged ? I18n.tr("Par boîte") : I18n.tr("Quantité")
+                    text: dialog.packaged ? I18n.tr("text.per_package") : I18n.tr("text.quantity")
                 }
                 Field {
                     id: amount
@@ -79,13 +79,13 @@ Modal {
                     Layout.fillWidth: true
                     placeholderText: dialog.packaged ? "250" : "500"
                     inputMethodHints: Qt.ImhFormattedNumbersOnly
-                    Accessible.name: dialog.packaged ? I18n.tr("Poids ou volume par boîte") : I18n.tr("Quantité disponible")
+                    Accessible.name: dialog.packaged ? I18n.tr("text.weight_or_volume_per_package") : I18n.tr("text.available_quantity")
                 }
             }
             ColumnLayout {
                 Layout.preferredWidth: 142
                 Caption {
-                    text: I18n.tr("Unité")
+                    text: I18n.tr("text.unit")
                 }
                 Choice {
                     id: unit
@@ -97,23 +97,23 @@ Modal {
         }
         Caption {
             Layout.fillWidth: true
-            text: dialog.packaged ? I18n.tr("Indiquez le poids ou le volume d’une boîte (ex. 2 pots de 250 g = 500 g).") : I18n.tr("Pour les aliments emballés, choisissez Boîtes / pots / paquets. Les pièces servent aux aliments comptables, comme les œufs.")
+            text: dialog.packaged ? I18n.tr("text.enter_the_weight_or_volume_of_one_package_e") : I18n.tr("text.for_packaged_foods_choose_boxes_tubs_packets_use_pieces")
         }
         Caption {
             objectName: "foodPackageTotal"
             visible: dialog.packaged && dialog.validAmount
             Layout.fillWidth: true
             color: Theme.accent
-            text: I18n.tr("Quantité totale : ") + dialog.totalAmount.toLocaleString(Qt.locale(), 'g', 8) + " " + unit.currentText
+            text: I18n.tr("text.total_quantity_2") + dialog.totalAmount.toLocaleString(Qt.locale(), 'g', 8) + " " + unit.currentText
         }
         Caption {
             objectName: "foodAmountHint"
             Layout.fillWidth: true
-            text: I18n.tr("Saisissez une quantité entre 0 et 100 000, supérieure à zéro.")
+            text: I18n.tr("text.enter_a_quantity_greater_than_zero_and_no_higher")
             color: amount.text.length > 0 && !dialog.validAmount ? Theme.danger : Theme.muted
         }
         Caption {
-            text: I18n.tr("Catégorie")
+            text: I18n.tr("text.category")
         }
         Choice {
             id: category
@@ -125,7 +125,7 @@ Modal {
             Layout.topMargin: 10
             ActionButton {
                 visible: dialog.food !== null
-                text: dialog.confirming ? I18n.tr("Confirmer le retrait") : I18n.tr("Retirer")
+                text: dialog.confirming ? I18n.tr("text.confirm_removal") : I18n.tr("text.remove")
                 destructive: true
                 quiet: true
                 onClicked: {
@@ -141,12 +141,12 @@ Modal {
                 Layout.fillWidth: true
             }
             ActionButton {
-                text: I18n.tr("Annuler")
+                text: I18n.tr("text.cancel")
                 quiet: true
                 onClicked: dialog.close()
             }
             ActionButton {
-                text: I18n.tr("Enregistrer")
+                text: I18n.tr("text.save")
                 primary: true
                 objectName: "saveFoodButton"
                 enabled: name.text.trim().length > 0 && dialog.validAmount
